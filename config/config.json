@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "root",
+    "password": "Ksj337900!",
+    "database": "agora",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "root",
+    "password": "Ksj337900!",
+    "database": "agora",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "Ksj337900!",
+    "database": "agora",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}

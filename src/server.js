@@ -1,6 +1,6 @@
 import "./db";
 import app from "./app";
 
-const PORT = 5000;
+const PORT = 8080;
 
 app.listen(PORT, console.log("Server is connected..."));
