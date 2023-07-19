@@ -1,20 +1,26 @@
-import { Sequelize, DataTypes } from "sequelize";
+import { Sequelize, DataTypes, FLOAT } from "sequelize";
 
 const sequelize = new Sequelize("Agora", "sunghwan", "1q2w3e4r!", {
-  host: "agora.cjjhfjmd1bce.ap-northeast-2.rds.amazonaws.com",
+  host: "agora-backend-mysql.cjjhfjmd1bce.ap-northeast-2.rds.amazonaws.com",
   dialect: "mysql",
 });
 
 const User = sequelize.define("User", {
-  username: {
+  user_email: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  email: {
+  user_pwd: {
     type: DataTypes.STRING,
+    allowNull: false,
   },
-  location: {
+  user_nickname: {
     type: DataTypes.STRING,
+    allowNull: false,
+  },
+  user_character_num: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
 });
 
