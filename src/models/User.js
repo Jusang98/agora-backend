@@ -1,9 +1,14 @@
 import { Sequelize, DataTypes, FLOAT } from "sequelize";
 
-const sequelize = new Sequelize("Agora", "sunghwan", "1q2w3e4r!", {
-  host: "agora-backend-mysql.cjjhfjmd1bce.ap-northeast-2.rds.amazonaws.com",
-  dialect: "mysql",
-});
+const sequelize = new Sequelize(
+  process.env.RES_DATABASE,
+  process.env.RDS_USER,
+  process.env.RDS_PASSWORD,
+  {
+    host: process.env.RDS_HOST,
+    dialect: "mysql",
+  }
+);
 
 const User = sequelize.define("User", {
   user_email: {

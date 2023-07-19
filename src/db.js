@@ -1,10 +1,11 @@
 import mysql2 from "mysql2";
+require("dotenv").config();
 
 const dbConfig = {
-  host: "agora-backend-mysql.cjjhfjmd1bce.ap-northeast-2.rds.amazonaws.com",
-  user: "sunghwan",
-  password: "1q2w3e4r!",
-  database: "Agora",
+  host: process.env.RDS_HOST,
+  user: process.env.RDS_USER,
+  password: process.env.RDS_PASSWORD,
+  database: process.env.RES_DATABASE,
 };
 
 const connection = mysql2.createConnection(dbConfig);
