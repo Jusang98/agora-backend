@@ -26,6 +26,7 @@ app.use((req, res, next) => {
 
 // app.use(cors(corsOptions));
 app.use(morgan("dev"));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use("/", rootRouter);

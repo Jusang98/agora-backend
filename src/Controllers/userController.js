@@ -17,7 +17,7 @@ export const postLogin = async (req, res, next) => {
   if (!user) {
     return res.render("userRegister", { pageTitle: "회원 가입" });
   }
-  return res.end();
+  return res.send("로그인 완료!");
 };
 
 export const getUserRegister = (req, res, next) => {
@@ -26,8 +26,8 @@ export const getUserRegister = (req, res, next) => {
 
 export const postUserRegister = async (req, res, next) => {
   const { user_email, user_pwd, user_nickname, user_character_num } = req.body;
-  await User.sync({ alter: true });
   try {
+    await User.sync({ alter: true });
     const newUser = await User.create({
       user_email,
       user_pwd,
