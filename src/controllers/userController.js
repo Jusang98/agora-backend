@@ -27,8 +27,7 @@ export const getUserRegister = (req, res, next) => {
 
 export const postUserRegister = async (req, res, next) => {
   const { user_email, user_pwd, user_nickname, user_character_num } = req.body;
-  // try {
-  await User.sync({ alter: true });
+
   const newUser = await User.create({
     user_email,
     user_pwd,
