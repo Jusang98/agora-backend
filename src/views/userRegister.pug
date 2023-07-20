@@ -1,0 +1,9 @@
+extends base
+
+block content 
+    form(method="POST")
+        input(placeholder="E-mail", type="email", name="user_email", required)
+        input(placeholder="Password", type="password", name="user_pwd", required)
+        input(placeholder="닉네임", type="text", name="user_nickname", required)
+        input(placeholder="캐릭터선택", type="text", name="user_character_num", required)
+        input(type="submit", value="회원 가입")
