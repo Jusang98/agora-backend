@@ -56,7 +56,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("new_message", (msg, room, callback) => {
-    sendLogToClients(msg);
     socket.to(room).emit("new_message", `${socket.nickname} : ${msg}`);
     callback();
   });
