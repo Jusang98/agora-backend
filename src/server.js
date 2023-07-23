@@ -1,4 +1,4 @@
 import "./db";
-import app from "./app";
+import expressServer from "./socketIO";
 
-app.listen(process.env.EC2_PORT, console.log("Express 연결...!"));
+expressServer.listen(process.env.EC2_PORT, console.log("Express 연결...!"));

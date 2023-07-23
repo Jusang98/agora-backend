@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "sunghwan",
-    "password": "1q2w3e4r!",
-    "database": "Agora",
-    "host": "agora-backend-mysql.cjjhfjmd1bce.ap-northeast-2.rds.amazonaws.com",
+    "username": "admin",
+    "password": "Agora1234!",
+    "database": "agora",
+    "host": "agora-instance-1.cue0a1mcmq2a.ap-northeast-2.rds.amazonaws.com",
     "dialect": "mysql"
   },
   "test": {
