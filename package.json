@@ -1,0 +1,38 @@
+{
+  "name": "agora",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jusang98/agora-backend.git"
+  },
+  "author": "sunghwan, jusang",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jusang98/agora-backend/issues"
+  },
+  "homepage": "https://github.com/Jusang98/agora-backend#readme",
+  "dependencies": {
+    "@socket.io/admin-ui": "^0.5.1",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.5.2",
+    "pug": "^3.0.2",
+    "socket.io": "^4.7.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.9",
+    "@babel/node": "^7.22.6",
+    "@babel/preset-env": "^7.22.9",
+    "nodemon": "^3.0.1",
+    "sequelize": "^6.32.1",
+    "sequelize-cli": "^6.6.1"
+  }
+}
