@@ -23,7 +23,7 @@ connection.connect((err, connection) => {
 sequelize
   .sync({ force: false })
   .then(() => {
-    console.log("MySQL 연결...");
+    console.log("MySQL 연결...!");
   })
   .catch((err) => {
     console.error(err);
