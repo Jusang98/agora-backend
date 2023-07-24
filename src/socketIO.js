@@ -34,6 +34,8 @@ class PlayerBall {
 let balls = [];
 let ballMap = {};
 
+let disconnectingSockets = new Set();
+
 const getPlayerColor = () => {
   return "#" + Math.floor(Math.random() * 16777215).toString(16);
 };
@@ -90,31 +92,54 @@ io.on("connection", (socket) => {
   socket["nickname"] = "anon";
 
   socket.onAny((event) => {
-    console.log(`socket event : ${event}`);
+    try {
+      console.log(`socket event : ${event}`);
+    } catch (err) {
+      console.error(`${event}에서 에러 발생 : ${err}`);
+    }
   });
 
   socket.on("enter_room", (data) => {
-    socket["nickname"] = data.nickName;
-    socket.join(data.roomName);
+    try {
+      socket["nickname"] = data.nickName;
+      socket.join(data.roomName);
 
-    socket
-      .to(data.roomName)
-      .emit("welcome", socket.nickname, countRoom(data.roomName));
+      // 방에 입장하는 유저가 본인이 입장했다는 사실을 알 수 있게함.
+      socket.emit("join_user", {
+        id: socket.id,
+        x: newBall.x,
+        y: newBall.y,
+        color: newBall.color,
+      });
 
-    socket.to(data.roomName).emit("join_user", {
-      id: socket.id,
-      x: newBall.x,
-      y: newBall.y,
-      color: newBall.color,
-    });
+      socket.emit("update_state", {
+        id: socket.id,
+        x: newBall.x,
+        y: newBall.y,
+      });
 
-    socket.to(data.roomName).emit("update_state", {
-      id: socket.id,
-      x: newBall.x,
-      y: newBall.y,
-    });
+      // 새로운 유저가 입장하면 기존에 방에 있던 유저들에게 알림.
+      socket
+        .to(data.roomName)
+        .emit("welcome", socket.nickname, countRoom(data.roomName));
 
-    io.sockets.emit("room_change", publicRooms());
+      socket.to(data.roomName).emit("join_user", {
+        id: socket.id,
+        x: newBall.x,
+        y: newBall.y,
+        color: newBall.color,
+      });
+
+      socket.to(data.roomName).emit("update_state", {
+        id: socket.id,
+        x: newBall.x,
+        y: newBall.y,
+      });
+
+      io.sockets.emit("room_change", publicRooms());
+    } catch (err) {
+      console.error(`Error during enter_room event: ${err}`);
+    }
   });
 
   socket.on("send_location", (data) => {
@@ -132,9 +157,20 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", (reason) => {
-    console.log(`${socket.id}님이 ${reason}의 이유로 퇴장하셨습니다. `);
-    endGame(socket);
-    io.sockets.emit("room_change", publicRooms());
+    try {
+      if (disconnectingSockets.has(socket.id)) {
+        return;
+      }
+      disconnectingSockets.add(socket.id);
+
+      console.log(`${socket.id}님이 ${reason}의 이유로 퇴장하셨습니다. `);
+      endGame(socket);
+      io.sockets.emit("room_change", publicRooms());
+    } catch (err) {
+      console.error(`Disconnect Error : ${err}`);
+    } finally {
+      disconnectingSockets.delete(socket.id);
+    }
   });
 
   socket.on("new_message", (msg, room, callback) => {
