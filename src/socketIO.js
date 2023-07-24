@@ -106,14 +106,14 @@ io.on("connection", (socket) => {
 
       // 방에 입장하는 유저가 본인이 입장했다는 사실을 알 수 있게함.
       socket.emit("join_user", {
-        id: socket.id,
+        id: socket.nickname,
         x: newBall.x,
         y: newBall.y,
         color: newBall.color,
       });
 
       socket.emit("update_state", {
-        id: socket.id,
+        id: socket.nickname,
         x: newBall.x,
         y: newBall.y,
       });
@@ -124,14 +124,14 @@ io.on("connection", (socket) => {
         .emit("welcome", socket.nickname, countRoom(data.roomName));
 
       socket.to(data.roomName).emit("join_user", {
-        id: socket.id,
+        id: socket.nickname,
         x: newBall.x,
         y: newBall.y,
         color: newBall.color,
       });
 
       socket.to(data.roomName).emit("update_state", {
-        id: socket.id,
+        id: socket.nickname,
         x: newBall.x,
         y: newBall.y,
       });

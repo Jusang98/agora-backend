@@ -1,5 +1,9 @@
 export const corsMiddleware = (req, res, next) => {
-  const allowedOrigins = ["3.35.5.22:8080", "localhost:3000"];
+  const allowedOrigins = [
+    "3.35.5.22:8080",
+    "localhost:3000",
+    "15.165.161.217:8080",
+  ];
 
   const origin = req.headers;
   if (allowedOrigins.includes(origin.host)) {
