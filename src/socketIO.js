@@ -39,57 +39,54 @@ const getPlayerColor = () => {
 };
 
 const joinGame = (socket, roomId) => {
-  const ball = new PlayerBall(socket); // 방에 대한 정보는 볼에 저장하지 않음
-  rooms[roomId].balls.push(ball);
-  rooms[roomId].ballMap[socket.nickname] = ball;
+  const ball = new PlayerBall(socket);
+  socket.join(roomId); // 클라이언트를 해당 방에 조인시킴
   return ball;
 };
 
 const endGame = (socket) => {
-  const roomId = getRoomIdBySocketId(socket.id);
-  if (rooms[roomId]) {
-    for (let i = 0; i < rooms[roomId].balls.length; i++) {
-      if (rooms[roomId].balls[i].id == socket.nickname) {
-        rooms[roomId].balls.splice(i, 1);
-        break;
-      }
-    }
-    delete rooms[roomId].ballMap[socket.nickname];
-  }
+  socket.rooms.forEach((room) => {
+    // 해당 클라이언트를 방에서 떠나게 함
+    socket.to(room).emit('bye', socket.nickname, countRoomPlayers(room) - 1);
+    socket.leave(room);
+  });
 };
 
 const publicRooms = () => {
-  const sids = io.sockets.adapter.sids;
   const rooms = io.sockets.adapter.rooms;
   const publicRooms = [];
   rooms.forEach((_, key) => {
-    if (sids.get(key) === undefined) {
-      publicRooms.push(key);
-    }
+    const playerCount = countRoomPlayers(key);
+    publicRooms.push({ roomName: key, playerCount });
   });
   return publicRooms;
+};
+
+const countRoomPlayers = (roomName) => {
+  return io.sockets.adapter.rooms.get(roomName)?.size || 0;
 };
 
 const countRoom = (roomName) => {
   return io.sockets.adapter.rooms.get(roomName)?.size;
 };
+
 const getRoomIdBySocketId = (socketId) => {
-  // io.sockets.adapter 에서 해당 소켓의 정보를 얻음
-  const socketRooms = io.sockets.adapter.sockets.get(socketId);
-  if (socketRooms) {
-    // 소켓이 속한 방의 ID를 추출하여 반환
-    const roomIds = Array.from(socketRooms);
-    return roomIds[0]; // 하나의 소켓은 하나의 방에만 속할 것으로 가정
+  for (const [roomId, room] of Object.entries(rooms)) {
+    // 해당 룸의 볼 맵에서 소켓 아이디를 찾아서 있다면 해당 룸 아이디를 반환
+    if (room.ballMap[socketId]) {
+      return roomId;
+    }
   }
   return null; // 소켓이 속한 방이 없는 경우 null 반환
 };
 
 // const rooms = new Map();
 const rooms = {};
+
 io.on('connection', (socket) => {
   socket.onAny((event) => {
     try {
-      console.log(`socket event : ${event}`);
+      // console.log(`socket event : ${event}`);
     } catch (err) {
       console.error(`${event}에서 에러 발생 : ${err}`);
     }
@@ -98,7 +95,8 @@ io.on('connection', (socket) => {
   socket.on('enter_room', (data) => {
     try {
       socket['nickname'] = data.nickname;
-      const roomId = data.roomName; // 방 ID로 사용할 유니크한 값
+      socket['roomId'] = data.roomName;
+      const roomId = data.roomName;
       console.log(`${socket.nickname}님이 방(${roomId})에 입장하셨습니다.`);
 
       socket.join(roomId);
@@ -111,20 +109,23 @@ io.on('connection', (socket) => {
         };
       }
 
-      let newBall = joinGame(socket, roomId); // roomId를 인자로 전달
+      const newBall = joinGame(socket, roomId);
 
-      // 해당 방에 있는 모든 플레이어의 정보를 새로운 볼에게 보냄
-      for (const ball of rooms[roomId].balls) {
-        if (ball.id !== socket.nickname) {
-          socket.emit('join_user', {
-            id: ball.id,
-            x: ball.x,
-            y: ball.y,
-            color: ball.color,
-          });
+      const roomClients = io.sockets.adapter.rooms.get(roomId);
+      if (roomClients) {
+        for (const clientId of roomClients) {
+          if (clientId !== socket.id) {
+            const ball = new PlayerBall(io.sockets.sockets.get(clientId));
+            socket.emit('join_user', {
+              id: ball.id,
+              x: ball.x,
+              y: ball.y,
+              color: ball.color,
+            });
+          }
         }
       }
-      // 해당 방에 있는 모든 플레이어에게 새로운 볼의 정보를 보냄
+
       io.to(roomId).emit('join_user', {
         id: socket.nickname,
         x: newBall.x,
@@ -136,25 +137,35 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error(`Error during enter_room event: ${err}`);
     }
+    console.log(
+      `방(${socket.roomId})에 현재 ${countRoomPlayers(
+        socket.roomId
+      )}명이 입장해 있습니다.`
+    );
   });
 
   socket.on('send_location', (data) => {
-    const roomId = getRoomIdBySocketId(socket.id);
-    if (rooms[roomId]) {
-      rooms[roomId].ballMap[socket.nickname].x = data.x;
-      rooms[roomId].ballMap[socket.nickname].y = data.y;
-      socket.to(roomId).broadcast.emit('update_state', {
-        id: data.id,
-        x: data.x,
-        y: data.y,
-      });
-    }
+    // console.log(`Received location data from client:`, data);
+    const roomId = data.roomName;
+    // if (roomId) {
+    //   // 해당 방에 플레이어가 속해있는지 확인하고 위치 업데이트
+
+    // const ball = rooms[roomId].ballMap[socket.nickname];
+
+    // 해당 방에 속한 모든 클라이언트들에게 위치 업데이트를 전달
+    io.to(roomId).emit('update_state', {
+      id: data.id,
+      x: data.x,
+      y: data.y,
+      color: data.color,
+    });
+
+    // console.log(`${socket.nickname}의 위치가 업데이트되었습니다.`);
+    // console.log(`${socket.nickname}의 x: ${ball.x}, y: ${ball.y}`);
   });
 
   socket.on('disconnecting', () => {
-    socket.rooms.forEach((room) => {
-      socket.to(room).emit('bye', socket.nickname, countRoom(room) - 1);
-    });
+    endGame(socket);
   });
 
   socket.on('disconnect', (reason) => {
@@ -164,7 +175,18 @@ io.on('connection', (socket) => {
       }
       disconnectingSockets.add(socket.id);
 
-      console.log(`${socket.nickname}님이 ${reason}의 이유로 퇴장하셨습니다. `);
+      if (socket.nickname) {
+        console.log(
+          `${socket.nickname}님이 ${reason}의 이유로 퇴장하셨습니다.`
+        );
+      }
+
+      console.log(
+        `방(${socket.roomId})에 현재 ${countRoomPlayers(
+          socket.roomId
+        )}명이 입장해 있습니다.`
+      );
+
       endGame(socket);
       io.sockets.emit('room_change', publicRooms());
     } catch (err) {
