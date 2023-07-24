@@ -41,6 +41,7 @@ const getPlayerColor = () => {
 const joinGame = (socket, roomId) => {
   const ball = new PlayerBall(socket);
   socket.join(roomId); // 클라이언트를 해당 방에 조인시킴
+
   return ball;
 };
 
@@ -94,10 +95,11 @@ io.on('connection', (socket) => {
 
   socket.on('enter_room', (data) => {
     try {
-      socket['nickname'] = data.nickname;
+      socket['nickname'] = data.nickName;
       socket['roomId'] = data.roomName;
       const roomId = data.roomName;
-      console.log(`${socket.nickname}님이 방(${roomId})에 입장하셨습니다.`);
+      const nickname = data.nickName;
+      console.log(`${nickname}님이 방(${roomId})에 입장하셨습니다.`);
 
       socket.join(roomId);
 
@@ -125,6 +127,10 @@ io.on('connection', (socket) => {
           }
         }
       }
+
+      socket
+        .to(data.roomName)
+        .emit('welcome', socket.nickname, countRoom(data.roomName));
 
       io.to(roomId).emit('join_user', {
         id: socket.nickname,
