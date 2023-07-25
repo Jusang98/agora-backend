@@ -1,11 +1,14 @@
-import User from '../models/User';
-import jwt from 'jsonwebtoken';
+import User from "../models/User";
+import Map from "../models/Map";
+import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
+
 export const home = (req, res, next) => {
-  return res.render('home', { pageTitle: 'Home' });
+  return res.render("home", { pageTitle: "Home" });
 };
 //jwt 추가할거임
 export const getLogin = (req, res, next) => {
-  return res.render('login', { pageTitle: 'Login' });
+  return res.render("login", { pageTitle: "Login" });
 };
 
 export const postLogin = async (req, res, next) => {
@@ -16,49 +19,33 @@ export const postLogin = async (req, res, next) => {
       user_email,
     },
   });
+
   if (!user) {
-    return res.render('userRegister', { pageTitle: '회원 가입' });
+    return res.render("userRegister", { pageTitle: "회원 가입" });
   }
-  let token = '';
+
+  let token = "";
   token = jwt.sign(
     {
-      type: 'JWT',
-      user_email: user_email,
+      type: "JWT",
+      user_email: user.user_email,
     },
     key,
     {
-      expiresIn: '30m', // 15분후 만료
-      issuer: '상주',
+      expiresIn: "30m", // 15분후 만료
+      issuer: "상주",
     }
   );
-  res.status(200).json({
+  console.log("token", token);
+  return res.status(200).json({
     code: 200,
-    message: 'token is created',
+    message: "token is created",
     token: token,
   });
-  
-  if (!user) {
-    return res.render('userRegister', { pageTitle: '회원 가입' });
-  }
-  return res.send('로그인 완료!');
 };
 
-// export const postLogin = async (req, res, next) => {
-//   const { user_email } = req.body;
-
-//   const user = await User.findOne({
-//     where: {
-//       user_email,
-//     },
-//   });
-//   if (!user) {
-//     return res.render('userRegister', { pageTitle: '회원 가입' });
-//   }
-//   return res.send('로그인 완료!');
-// };
-
 export const getUserRegister = (req, res, next) => {
-  return res.render('userRegister', { pageTitle: '회원 가입' });
+  return res.render("userRegister", { pageTitle: "회원 가입" });
 };
 // postUserRegister 생성 실패시 오류 메세지 반환으로 수정
 export const postUserRegister = async (req, res, next) => {
@@ -69,10 +56,25 @@ export const postUserRegister = async (req, res, next) => {
     user_nickname,
     user_character_num,
   });
-  if (!newUser) {
-    console.log('회원가입 실패 이미 있는 아이디');
-    return res.render('error', { pageTitle: '회원가입 실패' });
-  }
-  console.log('회원 가입한 유저 :', newUser);
-  return res.render('login', { pageTitle: 'Login' });
+
+  console.log("회원 가입한 유저 :", newUser);
+  return res.render("login", { pageTitle: "Login" });
+};
+
+export const searchMap = async (req, res, next) => {
+  try {
+    const { tag } = req.query;
+    let Maps = [];
+    if (tag) {
+      Maps = await Map.findAll({
+        where: {
+          map_tag: {
+            [Op.like]: `%${tag}%`,
+          },
+        },
+      });
+    }
+
+    return res.status(201).json(Maps);
+  } catch (err) {}
 };

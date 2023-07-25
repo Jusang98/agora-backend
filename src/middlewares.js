@@ -21,7 +21,7 @@ export const corsMiddleware = (req, res, next) => {
 
 dotenv.config();
 
-export const auth = (req, res, next) => {
+export const authMiddleware = (req, res, next) => {
   const key = process.env.SECRET_KEY;
   // 인증 완료
   try {

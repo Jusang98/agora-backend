@@ -97,6 +97,7 @@ io.on("connection", (socket) => {
               y: ball.y,
               color: ball.color,
             });
+            socket.to(roomId).emit("welcome", socket.nickname, roomPlayerCount);
           }
         }
       }
