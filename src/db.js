@@ -21,7 +21,7 @@ connection.connect((err, connection) => {
 });
 
 sequelize
-  .sync({ force: false })
+  .sync({ alter: true })
   .then(() => {
     console.log("MySQL 연결...!");
   })
