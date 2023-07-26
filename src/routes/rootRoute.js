@@ -1,18 +1,17 @@
-import express from 'express';
+import express from "express";
 import {
   home,
   getLogin,
   postLogin,
   getUserRegister,
   postUserRegister,
-} from '../controllers/userController';
-import { auth } from '../middlewares';
+} from "../controllers/userController";
 
 const rootRouter = express.Router();
 
-rootRouter.route('/').get(home);
-rootRouter.route('/login').get(getLogin).post(postLogin);
+rootRouter.route("/").get(home);
+rootRouter.route("/login").get(getLogin).post(postLogin);
 
-rootRouter.route('/user-register').get(getUserRegister).post(postUserRegister);
+rootRouter.route("/user-register").get(getUserRegister).post(postUserRegister);
 
 export default rootRouter;
