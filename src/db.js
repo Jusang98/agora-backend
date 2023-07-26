@@ -1,30 +1,8 @@
-import mysql from "mysql2";
-import dotenv from "dotenv";
-import { sequelize } from "./models";
+import mongoose from "mongoose";
 
-dotenv.config();
+mongoose.connect(process.env.DB_URL);
 
-const dbConfig = {
-  host: process.env.RDS_HOST,
-  user: process.env.RDS_USER,
-  password: process.env.RDS_PASSWORD,
-  database: process.env.RDS_DATABASE,
-};
+const db = mongoose.connection;
 
-const connection = mysql.createConnection(dbConfig);
-
-connection.connect((err, connection) => {
-  if (err) {
-    console.error("Error connecting to MySQL database:", err);
-    return;
-  }
-});
-
-sequelize
-  .sync({ force: false })
-  .then(() => {
-    console.log("MySQL 연결...!");
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+db.on("error", (error) => console.log("DB Error", error)); // 여러번 실행 가능
+db.once("open", () => console.log("mongoDB 연결...!")); // 한번만 실행

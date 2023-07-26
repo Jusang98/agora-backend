@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 
 export const corsMiddleware = (req, res, next) => {
   const allowedOrigins = [
-    "3.35.5.22:8080",
+    "13.209.19.79:8080",
     "localhost:3000",
     "15.165.161.217:8080",
+    "15.164.176.168:8080",
   ];
 
   const origin = req.headers;
@@ -18,8 +18,6 @@ export const corsMiddleware = (req, res, next) => {
 
   next();
 };
-
-dotenv.config();
 
 export const auth = (req, res, next) => {
   const key = process.env.SECRET_KEY;

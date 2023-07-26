@@ -1,3 +1,4 @@
+import "dotenv/config";
 import "./db";
 import expressServer from "./socketIO";
 
