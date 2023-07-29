@@ -7,22 +7,22 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  avatarUrl: { type: String },
-  socialOnly: { type: Boolean, default: false },
-  username: {
+  password: {
+    type: String,
+    required: true,
+  },
+  nickname: {
     type: String,
     required: true,
     unique: true,
   },
-  password: {
-    type: String,
-  },
-  name: {
-    type: String,
+  characterNum: {
+    type: Number,
     required: true,
   },
   videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }],
-  location: String,
+  images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
+  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Guestbook" }],
 });
 
 //Hashing password before save User Info
@@ -32,5 +32,4 @@ userSchema.pre("save", async function () {
 });
 
 const User = mongoose.model("User", userSchema);
-
 export default User;

@@ -1,0 +1,11 @@
+extends ../base
+
+block content
+  if errorMsg
+    span= errorMsg
+  form(method="post", enctype="multipart/form-data")
+    label(for="image") 이미지 업로드
+    input(type="file", accept="image/*", required, name="image")
+    input(placeholder="title", type="text", required, name="title")
+    input(placeholder="Content", type="text", required, name="content")
+    input(type="submit", value="Upload Image")

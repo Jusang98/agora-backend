@@ -1,0 +1,19 @@
+extends ../base
+
+block content
+    form(method="POST")
+        input(
+        placeholder="E-mail",
+        type="email",
+        name="email",
+        value=loggedInUser.email
+        )
+        input(
+        placeholder="Nickname",
+        type="text",
+        name="nickname",
+        value=loggedInUser.nickname
+        )
+        input(type="submit", value="Edit Profile")
+        hr
+        a(href="change-pw") 비밀번호 변경 &rarr;

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import multer from "multer";
 
 export const corsMiddleware = (req, res, next) => {
   const allowedOrigins = [
@@ -19,15 +20,22 @@ export const corsMiddleware = (req, res, next) => {
   next();
 };
 
-export const auth = (req, res, next) => {
-  const key = process.env.SECRET_KEY;
-  // 인증 완료
+export const authMiddleware = (req, res, next) => {
+  const key = process.env.ACCESS_TOKEN_SECRET;
+  const authHeader = req.headers.authorization;
   try {
-    // 요청 헤더에 저장된 토큰(req.headers.authorization)과 비밀키를 사용하여 토큰을 req.decoded에 반환
-    req.decoded = jwt.verify(req.headers.authorization, key);
-    next();
+    if (authHeader) {
+      const token = authHeader.split(" ")[1];
+      jwt.verify(token, key, (err, user) => {
+        if (err) {
+          return res.end();
+        }
+
+        req.user = user;
+        next();
+      });
+    }
   } catch (error) {
-    // 인증 실패
     // 유효시간이 초과된 경우
     if (error.name === "TokenExpiredError") {
       return res.status(419).json({
@@ -44,3 +52,21 @@ export const auth = (req, res, next) => {
     }
   }
 };
+
+export const localsMiddleware = (req, res, next) => {
+  if (req.session.loggedIn) {
+    res.locals.loggedIn = true;
+  } else {
+    res.locals.loggedIn = false;
+  }
+  res.locals.loggedInUser = req.session.user;
+  next();
+};
+
+export const multerMiddlewareVideo = multer({
+  dest: "uploads/videos",
+});
+
+export const multerMiddlewareImage = multer({
+  dest: "uploads/images",
+});
