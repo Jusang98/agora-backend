@@ -1,21 +1,22 @@
-import express from "express";
-import morgan from "morgan";
-import session from "express-session";
-import MongoStore from "connect-mongo";
-import rootRouter from "./routes/rootRoute";
-import userRouter from "./routes/userRoute";
-import videoRouter from "./routes/videoRoute";
-import imageRouter from "./routes/imageRoute";
-import apiRouter from "./routes/apiRoute";
-import { corsMiddleware, localsMiddleware } from "./middlewares";
+import express from 'express';
+import morgan from 'morgan';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import rootRouter from './routes/rootRoute';
+import userRouter from './routes/userRoute';
+import videoRouter from './routes/videoRoute';
+import imageRouter from './routes/imageRoute';
+import apiRouter from './routes/apiRoute';
+import boardRouter from './routes/BoardRouter';
+import { corsMiddleware, localsMiddleware } from './middlewares';
 
 const app = express();
 
-app.set("view engine", "pug");
-app.set("views", __dirname + "/views");
-app.use("/public", express.static(__dirname + "/public"));
+app.set('view engine', 'pug');
+app.set('views', __dirname + '/views');
+app.use('/public', express.static(__dirname + '/public'));
 
-app.use(morgan("dev"));
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(corsMiddleware);
@@ -35,12 +36,13 @@ app.use(
 );
 
 app.use(localsMiddleware);
-app.use("/uploads", express.static("uploads"));
+app.use('/uploads', express.static('uploads'));
 
-app.use("/", rootRouter);
-app.use("/user", userRouter);
-app.use("/videos", videoRouter);
-app.use("/images", imageRouter);
-app.use("/api", apiRouter);
+app.use('/', rootRouter);
+app.use('/user', userRouter);
+app.use('/videos', videoRouter);
+app.use('/images', imageRouter);
+app.use('/boards', boardRouter);
+app.use('/api', apiRouter);
 
 export default app;

@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -23,18 +23,19 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   friends: [{ type: String }],
   friendsRequests: [{ type: String }],
-  videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }],
-  images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
-  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Guestbook" }],
+  videos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
+  images: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Image' }],
+  boards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Board' }],
+  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Guestbook' }],
 });
 
 //Hashing password before save User Info
-userSchema.pre("save", async function () {
-  if (this.isModified("password"))
+userSchema.pre('save', async function () {
+  if (this.isModified('password'))
     this.password = await bcrypt.hash(this.password, 5);
 });
 
-userSchema.static("validateUser", async (email, password) => {
+userSchema.static('validateUser', async (email, password) => {
   const user = await User.findOne({ email });
   if (!user) {
     return null;
@@ -48,5 +49,5 @@ userSchema.static("validateUser", async (email, password) => {
   return user;
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 export default User;
