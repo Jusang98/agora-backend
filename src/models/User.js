@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  isVerified: { type: Boolean, default: false },
   friends: [{ type: String }],
   friendsRequests: [{ type: String }],
   videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }],

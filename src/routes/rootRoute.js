@@ -6,6 +6,7 @@ import {
   postLogin,
   getUserRegister,
   postUserRegister,
+  verifyUserEmail,
   logout,
 } from "../controllers/userController";
 import { publicOnlyMiddleware, protectorMiddleware } from "../middlewares";
@@ -25,5 +26,6 @@ rootRouter
   .all(publicOnlyMiddleware)
   .get(getUserRegister)
   .post(postUserRegister);
+rootRouter.route("/verify/:token").get(verifyUserEmail);
 
 export default rootRouter;

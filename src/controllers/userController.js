@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "../models/User";
 import Guestbook from "../models/Guestbook";
+import nodemailer from "nodemailer";
 
 export const home = async (req, res, next) => {
   try {
@@ -20,6 +21,7 @@ export const postLogin = async (req, res, next) => {
   const { email, password } = req.body;
 
   const user = await User.validateUser(email, password);
+  console.log("로그인한 유저 :", user);
   if (!user) {
     return res.status(401).send("유효하지않은 인증입니다.");
   }
@@ -81,10 +83,63 @@ export const postUserRegister = async (req, res, next) => {
       characterNum,
     });
 
+    const token = jwt.sign(
+      { userId: newUser._id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      host: "smtp.gmail.com",
+      auth: {
+        user: process.env.EMAIL_ADDRESS,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_ADDRESS,
+      to: newUser.email,
+      subject: "Email Verification",
+      html: `<h1>1시간 내로 인증 바람!!!</h1><h2>Click the link to verify your email: http://15.164.176.168:8080/verify/${token}</h2>`,
+    };
+
+    await transporter.sendMail(mailOptions, function (err, info) {
+      if (err) {
+        console.log(err);
+        return res.status(500).send("An error occurred while sending email");
+      } else {
+        console.log("Email sent: " + info.response);
+        return res.send("Registration successful. Please verify your email.");
+      }
+    });
+
     // return res.json(newUser);
-    return res.redirect("/login");
+    //return res.redirect("/login");
   } catch (err) {
     console.error("ERROR :", err);
+  }
+};
+
+export const verifyUserEmail = async (req, res, next) => {
+  try {
+    const decoded = jwt.verify(
+      req.params.token,
+      process.env.ACCESS_TOKEN_SECRET
+    );
+    console.log(decoded);
+
+    const user = await User.findById(decoded.userId);
+    if (!user) return res.status(400).send("User not found.");
+
+    user.isVerified = true;
+    await user.save();
+
+    console.log("Email verification successful.");
+    return res.redirect("/login");
+  } catch (err) {
+    return res.status(400).send("Invalid or expired token.");
   }
 };
 
