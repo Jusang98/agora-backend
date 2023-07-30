@@ -58,14 +58,15 @@ export const multerMiddlewareBoard = s3Upload;
 
 /* jwt 토큰 인증 미들웨어 */
 export const authMiddleware = (req, res, next) => {
-  const key = process.env.ACCESS_TOKEN_SECRET;
-  const authHeader = req.headers.authorization;
   try {
+    const key = process.env.ACCESS_TOKEN_SECRET;
+    const authHeader = req.headers.authorization;
+
     if (authHeader) {
       const token = authHeader.split(' ')[1];
       jwt.verify(token, key, (err, user) => {
         if (err) {
-          return res.end();
+          throw new Error('Error verifying token');
         }
 
         req.user = user;
@@ -87,5 +88,7 @@ export const authMiddleware = (req, res, next) => {
         message: '유효하지 않은 토큰입니다.',
       });
     }
+    // 그 외의 에러
+    return next(error);
   }
 };

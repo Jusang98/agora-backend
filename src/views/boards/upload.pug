@@ -3,9 +3,21 @@ extends ../base
 block content
   if errorMsg
     span= errorMsg
-  form(method="post", enctype="multipart/form-data")
+  img#imagePreview(style="width: 200px; height: 200px; object-fit: cover;")
+  form(id="createBoardForm", method="post", action="/boards/upload", enctype="multipart/form-data")
     label(for="image") 게시물 업로드
     input(type="file", accept="image/*", required, name="file")
     input(placeholder="title", type="text", required, name="title")
     input(placeholder="Content", type="text", required, name="content")
-    input(type="submit", value="Upload Board")
+    input(type="submit", value="Create Board")
+  script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js")
+  script.
+    $(document).ready(function() {
+      $('#createBoardForm input[name=file]').change(function(e) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          $('#imagePreview').attr('src', e.target.result);
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      });
+    });
