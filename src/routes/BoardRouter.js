@@ -7,13 +7,13 @@ import {
   postBoardCreate,
   deleteBoard,
 } from '../controllers/boardController';
-import { multerMiddlewareBoard } from '../middlewares';
+import { multerMiddleware } from '../middlewares';
 
 const boardRouter = express.Router();
-
+boardRouter.route('/:id([0-9a-f]{24})').get(watch);
 boardRouter
   .route('/upload')
   .get(getBoard)
-  .post(multerMiddlewareBoard, postBoardCreate);
+  .post(multerMiddleware, postBoardCreate);
 
 export default boardRouter;

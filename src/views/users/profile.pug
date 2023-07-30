@@ -1,6 +1,7 @@
 extends ../base
 include ../mixins/video
 include ../mixins/image
+include ../mixins/board
 
 block content
   if ((String(loggedInUser._id) !== String(pageOwner.id)) ) && !friendExist
@@ -13,9 +14,13 @@ block content
   else
     div
       a(href=`${pageOwner.id}/checkGuestbook`) 방명록 보러가기'
+
   h1 게시물 리스트
-  each board in boards
+  each board in pageOwner.boards
     +showBoardList(board)
+  else 
+    h1 텅~
+
   h1 비디오 리스트
   each video in pageOwner.videos
     +showVideoList(video)
