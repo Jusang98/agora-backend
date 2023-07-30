@@ -5,7 +5,8 @@ import MongoStore from "connect-mongo";
 import rootRouter from "./routes/rootRoute";
 import userRouter from "./routes/userRoute";
 import videoRouter from "./routes/videoRoute";
-import imageRouter from "./routes/imageRouter";
+import imageRouter from "./routes/imageRoute";
+import apiRouter from "./routes/apiRoute";
 import { corsMiddleware, localsMiddleware } from "./middlewares";
 
 const app = express();
@@ -21,7 +22,7 @@ app.use(corsMiddleware);
 
 app.use(
   session({
-    secret: "secret",
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -35,9 +36,11 @@ app.use(
 
 app.use(localsMiddleware);
 app.use("/uploads", express.static("uploads"));
+
 app.use("/", rootRouter);
 app.use("/user", userRouter);
 app.use("/videos", videoRouter);
 app.use("/images", imageRouter);
+app.use("/api", apiRouter);
 
 export default app;

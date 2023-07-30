@@ -20,6 +20,41 @@ export const corsMiddleware = (req, res, next) => {
   next();
 };
 
+export const localsMiddleware = (req, res, next) => {
+  if (req.session.loggedIn) {
+    res.locals.loggedIn = true;
+  } else {
+    res.locals.loggedIn = false;
+  }
+  res.locals.loggedInUser = req.session.user;
+  next();
+};
+
+export const protectorMiddleware = (req, res, next) => {
+  if (req.session.loggedIn) {
+    next();
+  } else {
+    return res.redirect("/login");
+  }
+};
+
+export const publicOnlyMiddleware = (req, res, next) => {
+  if (!req.session.loggedIn) {
+    next();
+  } else {
+    return res.redirect("/");
+  }
+};
+
+export const multerMiddlewareVideo = multer({
+  dest: "uploads/videos",
+});
+
+export const multerMiddlewareImage = multer({
+  dest: "uploads/images",
+});
+
+/* jwt 토큰 인증 미들웨어 */
 export const authMiddleware = (req, res, next) => {
   const key = process.env.ACCESS_TOKEN_SECRET;
   const authHeader = req.headers.authorization;
@@ -52,21 +87,3 @@ export const authMiddleware = (req, res, next) => {
     }
   }
 };
-
-export const localsMiddleware = (req, res, next) => {
-  if (req.session.loggedIn) {
-    res.locals.loggedIn = true;
-  } else {
-    res.locals.loggedIn = false;
-  }
-  res.locals.loggedInUser = req.session.user;
-  next();
-};
-
-export const multerMiddlewareVideo = multer({
-  dest: "uploads/videos",
-});
-
-export const multerMiddlewareImage = multer({
-  dest: "uploads/images",
-});

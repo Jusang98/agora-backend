@@ -58,3 +58,27 @@ export const deleteImage = async (req, res, next) => {
 
   return res.redirect("/");
 };
+
+/*------------------ Controllers for API ROUTER ------------------*/
+export const registerImageView = async (req, res, next) => {
+  const { id } = req.params;
+  const image = await Image.findById(id);
+  if (!image) {
+    return res.sendStatus(404);
+  }
+  image.meta.views = image.meta.views + 1;
+  await image.save();
+  return res.sendStatus(200);
+};
+
+export const registerImageLike = async (req, res, next) => {
+  const { id } = req.params;
+  const image = await Video.findById(id);
+  if (!image) {
+    return res.sendStatus(404);
+  }
+  image.meta.likes = image.meta.likes + 1;
+  await image.save();
+  return res.sendStatus(200);
+};
+/*--------------------------------------------------------------- */

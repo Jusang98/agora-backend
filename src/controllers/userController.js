@@ -1,31 +1,14 @@
 import jwt from "jsonwebtoken";
-import User from "../models/User";
-import Video from "../models/Video";
-import Guestbook from "../models/Guestbook";
 import bcrypt from "bcrypt";
-
-/*------------------------------------------------------------------------------*/
-const validateUser = async (email, password) => {
-  const user = await User.findOne({ email });
-  if (!user) {
-    return null;
-  }
-
-  const validPassword = await bcrypt.compare(password, user.password);
-  if (!validPassword) {
-    return null;
-  }
-
-  return user;
-};
-/*------------------------------------------------------------------------------*/
+import User from "../models/User";
+import Guestbook from "../models/Guestbook";
 
 export const home = async (req, res, next) => {
   try {
     const users = await User.find({});
     return res.render("home", { pageTitle: "Home", users }); // pug에 변수 보내주기
   } catch {
-    return res.end();
+    return res.sendStatus(404);
   }
 };
 
@@ -36,9 +19,14 @@ export const getLogin = async (req, res, next) => {
 export const postLogin = async (req, res, next) => {
   const { email, password } = req.body;
 
-  const user = await validateUser(email, password);
+  const user = await User.validateUser(email, password);
   if (!user) {
     return res.status(401).send("유효하지않은 인증입니다.");
+  }
+
+  const verifyPassword = await bcrypt.compare(password, user.password);
+  if (!verifyPassword) {
+    return res.status(400).send("비밀번호가 일치하지 않습니다.");
   }
 
   req.session.loggedIn = true;
@@ -46,13 +34,15 @@ export const postLogin = async (req, res, next) => {
 
   return res.redirect("/");
 
-  // const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET);
+  /*
+  const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET);
 
-  // return res.status(200).json({
-  //   code: 200,
-  //   message: "token is created",
-  //   token: token,
-  // });
+  return res.status(200).json({
+    code: 200,
+    message: "token is created",
+    token: token,
+  });
+  */
 };
 
 export const logout = (req, res, next) => {
@@ -100,12 +90,12 @@ export const postUserRegister = async (req, res, next) => {
 
 export const getSearchUser = async (req, res, next) => {
   const { searchUser } = req.query;
-  console.log("리퀘스트 확인 : ", req);
+
   let users = [];
   if (searchUser) {
     users = await User.find({
       nickname: {
-        $regex: new RegExp(searchUser, "i"), //대소문자 구분없이 searchUser를 포함하고있으면 모두 검색(몽고DB 기능))
+        $regex: new RegExp(searchUser, "i"),
       },
     });
   }
@@ -114,18 +104,33 @@ export const getSearchUser = async (req, res, next) => {
 };
 
 export const seeUserProfile = async (req, res, next) => {
-  const { id } = req.params;
-  const user = await User.findById(id).populate("videos").populate("images");
+  const {
+    params: { id },
+    session: {
+      user: { _id },
+    },
+  } = req;
 
-  if (!user) {
-    return res.status(404).render("404", { pageTitle: "User not found" });
+  const pageOwner = await User.findById(id)
+    .populate("videos")
+    .populate("images");
+  const visitor = await User.findById(_id);
+  let friendExist = false;
+
+  if (visitor.nickname in pageOwner.friends) {
+    friendExist = true;
+  }
+
+  if (!pageOwner) {
+    return res
+      .status(404)
+      .render("404", { pageTitle: "User not found", friendExist });
   }
 
   return res.render("users/profile", {
-    pageTitle: `${user.nickname} Profile`,
-    user,
-    videos: user.videos,
-    images: user.images,
+    pageTitle: `${pageOwner.nickname} Profile`,
+    pageOwner,
+    friendExist,
   });
 };
 
@@ -134,8 +139,6 @@ export const getEdit = (req, res, next) => {
 };
 
 export const postEdit = async (req, res, next) => {
-  // const _id = req.session.user._id;
-  // const { name, email, nickname } = req.body; 아래 코드와 동일
   const {
     session: {
       user: { _id, email: sessionEmail, nickname: sessionNickname },
@@ -166,7 +169,7 @@ export const postEdit = async (req, res, next) => {
       email,
       nickname,
     },
-    { new: true } // data를 update한 후 update된 데이터를 리턴하도록 설정.
+    { new: true }
   );
   req.session.user = updatedUser;
 
@@ -174,9 +177,6 @@ export const postEdit = async (req, res, next) => {
 };
 
 export const getGuestbook = async (req, res, next) => {
-  if (req.session.loggedIn === false) {
-    return res.render("login", { pageTitle: "로그인" });
-  }
   return res.render("guestbook", { pageTitle: "방명록 남기기" });
 };
 
@@ -207,3 +207,93 @@ export const checkGuestbook = async (req, res, next) => {
 
   return res.render("users/myGuestbooks", { pageTitle: "방명록", guestbooks });
 };
+
+export const getChangePassword = (req, res, next) => {
+  return res.render("users/changePassword", { pageTitle: "비밀번호 변경" });
+};
+
+export const postChangePassword = async (req, res, next) => {
+  const {
+    session: {
+      user: { _id },
+    },
+    body: { oldPassword, newPassword, newPassword1 },
+  } = req;
+  const user = await User.findById(_id);
+
+  if (newPassword !== newPassword1) {
+    return res.status(400).render("users/change-pw", {
+      pageTitle: "Change Password",
+      errMessage: "새 비밀번호가 일치하지 않습니다.",
+    });
+  }
+
+  const checkPassword = await bcrypt.compare(oldPassword, user.password);
+  if (!checkPassword) {
+    return res.status(400).render("users/change-pw", {
+      pageTitle: "Change Password",
+      errMessage: "비밀번호가 일치하지 않습니다.",
+    });
+  }
+
+  user.password = newPassword;
+  await user.save();
+  req.session.user.password = user.password;
+
+  return res.redirect("/users/logout");
+};
+
+/*------------------ Controllers for API ROUTER ------------------*/
+export const sendFriendReq = async (req, res, next) => {
+  const { to, from } = req.body;
+
+  const fromUser = await User.findOne({ email: from });
+  const toUser = await User.findOne({ email: to });
+
+  if (!fromUser || !toUser) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  if (toUser.friends.includes(fromUser.nickname)) {
+    return res.status(400).json({ message: "이미 요청을 보냈습니다" });
+  }
+
+  try {
+    toUser.friendsRequests.push(fromUser.nickname);
+    await toUser.save();
+
+    return res.sendStatus(200);
+  } catch {
+    return res.sendStatus(400);
+  }
+};
+
+export const handleFriendReq = async (req, res, next) => {
+  const { from, to, action } = req.body;
+
+  try {
+    const fromUser = await User.findOne({ email: from });
+    const toUser = await User.findOne({ email: to });
+
+    if (!fromUser || !toUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    toUser.friendsRequests = toUser.friendsRequests.filter(
+      (req) => req.toString() !== fromUser.nickname.toString()
+    );
+
+    if (action === "accept") {
+      fromUser.friends.push(toUser.nickname);
+      toUser.friends.push(fromUser.nickname);
+    }
+
+    await fromUser.save();
+    await toUser.save();
+
+    res.json({ message: `Friend request ${action}ed` });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+/*--------------------------------------------------------------- */
