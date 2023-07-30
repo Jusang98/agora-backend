@@ -1,13 +1,13 @@
-import app from "./app";
-import http from "http";
-import { Server } from "socket.io";
-import { instrument } from "@socket.io/admin-ui";
+import app from './app';
+import http from 'http';
+import { Server } from 'socket.io';
+import { instrument } from '@socket.io/admin-ui';
 
 const expressServer = http.createServer(app);
 
 const io = new Server(expressServer, {
   cors: {
-    origin: ["https://admin.socket.io", "http://localhost:3000"],
+    origin: ['https://admin.socket.io', 'http://localhost:3000'],
     credentials: true,
   },
 });
@@ -26,7 +26,6 @@ class PlayerBall {
     this.socket = socket;
     this.x = startX;
     this.z = startZ;
-    this.color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   }
 
   get id() {
@@ -49,7 +48,7 @@ const joinGame = (socket, roomId) => {
 // 게임 종료 시 처리하는 함수
 const endGame = (socket) => {
   socket.rooms.forEach((room) => {
-    socket.to(room).emit("bye", socket.nickname, countRoomPlayers(room) - 1);
+    socket.to(room).emit('bye', socket.nickname, countRoomPlayers(room) - 1);
     socket.leave(room);
   });
 };
@@ -70,20 +69,20 @@ const countRoomPlayers = (roomName) => {
 };
 
 // socket.io의 connection 이벤트 처리
-io.on("connection", (socket) => {
+io.on('connection', (socket) => {
   // sendlocation 이벤트 빼고 찍히게
 
   socket.onAny((event) => {
     try {
-      // if (event != 'send_location') {
-      console.log(`socket 이벤트: ${event}`);
-      // }
+      if (event != 'send_location') {
+        console.log(`socket 이벤트: ${event}`);
+      }
     } catch (err) {
       console.error(`${event}에서 에러 발생: ${err}`);
     }
   });
 
-  socket.on("enter_room", (data) => {
+  socket.on('enter_room', (data) => {
     try {
       socket.nickname = data.nickName;
       socket.roomId = data.roomName;
@@ -98,9 +97,19 @@ io.on("connection", (socket) => {
       const newBall = joinGame(socket, socket.roomId);
       const roomPlayerCount = countRoomPlayers(socket.roomId);
 
-      // 클라이언트에게 입장한 유저 수를 보내기 위해 welcome 이벤트를 사용합니다.
-      io.to(socket.id).emit("welcome", socket.nickname, roomPlayerCount);
-
+      // 클라이언트에게 입장한 유저 수를 보내는 용도
+      io.to(socket.id).emit('welcome', socket.nickname, roomPlayerCount);
+      // 새로운 유저
+      io.to(socket.id).emit('new_user', {
+        id: socket.roomId,
+        roomPlayerCount: roomPlayerCount,
+        nickName: socket.nickname,
+      });
+      //기존 유저
+      socket.broadcast.to(socket.roomId).emit('origin_user', {
+        nickName: socket.nickname,
+        enter: '입장',
+      });
       const roomClients = io.sockets.adapter.rooms.get(socket.roomId);
       if (roomClients) {
         for (const clientId of roomClients) {
@@ -108,22 +117,20 @@ io.on("connection", (socket) => {
             const ball = new PlayerBall(io.sockets.sockets.get(clientId));
             socket
               .to(socket.roomId)
-              .emit("welcome", socket.nickname, roomPlayerCount);
-            socket.emit("join_user", {
+              .emit('welcome', socket.nickname, roomPlayerCount);
+            socket.emit('join_user', {
               id: ball.id,
               x: ball.x,
               z: ball.z,
-              color: ball.color,
             });
           }
         }
       }
 
-      io.to(socket.roomId).emit("join_user", {
+      io.to(socket.roomId).emit('join_user', {
         id: socket.nickname,
         x: newBall.x,
         z: newBall.z,
-        color: newBall.color,
       });
 
       console.log(
@@ -136,22 +143,21 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("send_location", (data) => {
+  socket.on('send_location', (data) => {
     const roomId = data.roomName;
     // 해당 방에 속한 모든 클라이언트들에게 위치 업데이트를 전달
-    io.to(roomId).emit("update_state", {
+    io.to(roomId).emit('update_state', {
       id: data.id,
       x: data.x,
       z: data.z,
-      color: data.color,
     });
   });
 
-  socket.on("disconnecting", () => {
+  socket.on('disconnecting', () => {
     endGame(socket);
   });
 
-  socket.on("disconnect", (reason) => {
+  socket.on('disconnect', (reason) => {
     try {
       if (disconnectingSockets.has(socket.id)) {
         return;
@@ -162,6 +168,10 @@ io.on("connection", (socket) => {
         console.log(
           `${socket.nickname}님이 ${reason}의 이유로 퇴장하셨습니다.`
         );
+        socket.broadcast.to(socket.roomId).emit('origin_user', {
+          nickName: socket.nickname,
+          quit: '퇴장',
+        });
       }
 
       console.log(
@@ -171,7 +181,7 @@ io.on("connection", (socket) => {
       );
 
       endGame(socket);
-      io.sockets.emit("room_change", publicRooms());
+      io.sockets.emit('room_change', publicRooms());
     } catch (err) {
       console.error(`disconnect 이벤트 처리 중 오류 발생: ${err}`);
     } finally {
@@ -179,8 +189,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("new_message", (msg, room, callback) => {
-    socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+  socket.on('new_message', (msg, room, callback) => {
+    socket.to(room).emit('new_message', `${socket.nickname}: ${msg}`);
     console.log(`${socket.nickname}: ${msg}`);
     callback();
   });
