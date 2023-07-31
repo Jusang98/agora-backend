@@ -1,5 +1,9 @@
 import express from "express";
 import { sendFriendReq, handleFriendReq } from "../controllers/userController";
+import {
+  registerBoardView,
+  registerBoardLike,
+} from "../controllers/boardController";
 
 const apiRouter = express.Router();
 
