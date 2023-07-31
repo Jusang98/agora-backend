@@ -7,6 +7,7 @@ export const corsMiddleware = (req, res, next) => {
     "localhost:3000",
     "15.165.161.217:8080",
     "15.164.176.168:8080",
+    "3.35.5.145:8080",
   ];
 
   const origin = req.headers;
@@ -20,32 +21,6 @@ export const corsMiddleware = (req, res, next) => {
   next();
 };
 
-export const localsMiddleware = (req, res, next) => {
-  if (req.session.loggedIn) {
-    res.locals.loggedIn = true;
-  } else {
-    res.locals.loggedIn = false;
-  }
-  res.locals.loggedInUser = req.session.user;
-  next();
-};
-
-export const protectorMiddleware = (req, res, next) => {
-  if (req.session.loggedIn) {
-    next();
-  } else {
-    return res.redirect("/login");
-  }
-};
-
-export const publicOnlyMiddleware = (req, res, next) => {
-  if (!req.session.loggedIn) {
-    next();
-  } else {
-    return res.redirect("/");
-  }
-};
-
 export const multerMiddlewareVideo = multer({
   dest: "uploads/videos",
 });
@@ -54,16 +29,21 @@ export const multerMiddlewareImage = multer({
   dest: "uploads/images",
 });
 
+//s3 업로드 용 코드
+const storage = multer.memoryStorage(); // 파일을 디스크에 저장하지 않고 메모리에 유지하도록 설정
+export const multerMiddleware = multer({ storage }).single("file"); // 'file'은 폼(input 엘리먼트)의 name 속성과 일치해야 합니다.
+
 /* jwt 토큰 인증 미들웨어 */
 export const authMiddleware = (req, res, next) => {
-  const key = process.env.ACCESS_TOKEN_SECRET;
-  const authHeader = req.headers.authorization;
   try {
+    const key = process.env.ACCESS_TOKEN_SECRET;
+    const authHeader = req.headers.authorization;
+
     if (authHeader) {
       const token = authHeader.split(" ")[1];
       jwt.verify(token, key, (err, user) => {
         if (err) {
-          return res.end();
+          throw new Error("Error verifying token");
         }
 
         req.user = user;
@@ -85,5 +65,7 @@ export const authMiddleware = (req, res, next) => {
         message: "유효하지 않은 토큰입니다.",
       });
     }
+    // 그 외의 에러
+    return next(error);
   }
 };

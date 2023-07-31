@@ -1,8 +1,0 @@
-extends base
-include mixins/user
-
-block content
-    h1 유저 리스트
-    ul
-        each user in users
-            +showUserList(user)

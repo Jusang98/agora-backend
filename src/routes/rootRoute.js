@@ -1,31 +1,19 @@
 import express from "express";
 import {
-  home,
-  getSearchUser,
-  getLogin,
-  postLogin,
-  getUserRegister,
+  verifyUserCode,
   postUserRegister,
-  verifyUserEmail,
-  logout,
+  postLogin,
+  getSearchUser,
 } from "../controllers/userController";
-import { publicOnlyMiddleware, protectorMiddleware } from "../middlewares";
 
 const rootRouter = express.Router();
 
-rootRouter.route("/").get(home);
+rootRouter.get("/", (req, res) => {
+  return res.send("회원가입!!!!");
+});
+rootRouter.route("/verify").post(verifyUserCode);
+rootRouter.route("/user-register").post(postUserRegister);
+rootRouter.route("/login").post(postLogin);
 rootRouter.route("/search").get(getSearchUser);
-rootRouter
-  .route("/login")
-  .all(publicOnlyMiddleware)
-  .get(getLogin)
-  .post(postLogin);
-rootRouter.route("/logout").get(protectorMiddleware, logout);
-rootRouter
-  .route("/user-register")
-  .all(publicOnlyMiddleware)
-  .get(getUserRegister)
-  .post(postUserRegister);
-rootRouter.route("/verify/:token").get(verifyUserEmail);
 
 export default rootRouter;

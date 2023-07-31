@@ -1,7 +1,0 @@
-mixin showGusetbooksList(arg)
-    div
-        h4
-            p= arg.content
-        a(href=`/user/${arg.writer.id}`) #{arg.writer.nickname}
-        small=arg.createdAt
-        hr

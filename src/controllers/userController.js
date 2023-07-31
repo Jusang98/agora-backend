@@ -1,93 +1,32 @@
-import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 import User from "../models/User";
 import Guestbook from "../models/Guestbook";
 import nodemailer from "nodemailer";
 
-export const home = async (req, res, next) => {
-  try {
-    const users = await User.find({});
-    return res.render("home", { pageTitle: "Home", users }); // pug에 변수 보내주기
-  } catch {
-    return res.sendStatus(404);
-  }
-};
+//postman 체크 완
+export const verifyUserCode = async (req, res, next) => {
+  const { email } = req.body;
 
-export const getLogin = async (req, res, next) => {
-  return res.render("login", { pageTitle: "로그인" });
-};
-
-export const postLogin = async (req, res, next) => {
-  const { email, password } = req.body;
-
-  const user = await User.validateUser(email, password);
-  console.log("로그인한 유저 :", user);
-  if (!user) {
-    return res.status(401).send("유효하지않은 인증입니다.");
-  }
-
-  const verifyPassword = await bcrypt.compare(password, user.password);
-  if (!verifyPassword) {
-    return res.status(400).send("비밀번호가 일치하지 않습니다.");
-  }
-
-  req.session.loggedIn = true;
-  req.session.user = user;
-
-  return res.redirect("/");
-
-  /*
-  const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET);
-
-  return res.status(200).json({
-    code: 200,
-    message: "token is created",
-    token: token,
-  });
-  */
-};
-
-export const logout = (req, res, next) => {
-  req.session.destroy();
-
-  return res.redirect("/");
-};
-
-export const getUserRegister = async (req, res, next) => {
-  return res.render("userRegister", { pageTitle: "회원 가입" });
-};
-
-export const postUserRegister = async (req, res, next) => {
-  const { email, password, password2, nickname, characterNum } = req.body;
-  const pageTitle = "회원 가입";
-  if (password !== password2) {
-    return res.status(400).render("userRegister", {
-      pageTitle,
-      errMessage: "비밀번호가 일치하지 않습니다.",
-    });
-  }
-
-  const userExists = await User.exists({ $or: [{ email }, { nickname }] }); //username이나 email 둘 중 하나라도 존재한다면 true 반환.
+  const userExists = await User.exists({ email }); //username이나 email 둘 중 하나라도 존재한다면 true 반환.
   if (userExists) {
-    return res.status(400).render("userRegister", {
-      pageTitle,
+    return res.status(400).json({
       errMessage: "존재하는 계정 입니다.",
     });
   }
 
   try {
+    const verificationCode = crypto.randomBytes(3).toString("hex"); // 6자리의 랜덤 인증 코드 생성
+    const verificationCodeExpiration = Date.now() + 3600000;
+
     const newUser = await User.create({
       email,
-      password,
-      nickname,
-      characterNum,
+      password: "1",
+      nickname: "temporary",
+      characterNum: "1",
+      verificationCode,
+      verificationCodeExpiration,
     });
-
-    const token = jwt.sign(
-      { userId: newUser._id },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "1h" }
-    );
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -102,8 +41,9 @@ export const postUserRegister = async (req, res, next) => {
       from: process.env.EMAIL_ADDRESS,
       to: newUser.email,
       subject: "Email Verification",
-      html: `<h1>1시간 내로 인증 바람!!!</h1><h2>Click the link to verify your email: http://15.164.176.168:8080/verify/${token}</h2>`,
+      html: `<h1>1시간 내로 인증 바람!!!</h1><p>Your verification code is: ${verificationCode}</p>`,
     };
+    // 링크클릭만 하는게 아니고, 인증번호를 클라이언트한테 보내서 인증번호가 맞으면 우리가 처리하는 식으로 변경하자!
 
     await transporter.sendMail(mailOptions, function (err, info) {
       if (err) {
@@ -111,140 +51,146 @@ export const postUserRegister = async (req, res, next) => {
         return res.status(500).send("An error occurred while sending email");
       } else {
         console.log("Email sent: " + info.response);
-        return res.send("Registration successful. Please verify your email.");
+        return res
+          .status(200)
+          .send("Registration successful. Please verify your email.");
       }
     });
-
-    // return res.json(newUser);
-    //return res.redirect("/login");
   } catch (err) {
     console.error("ERROR :", err);
   }
 };
 
-export const verifyUserEmail = async (req, res, next) => {
+export const postUserRegister = async (req, res, next) => {
+  const { email, password, password2, nickname, characterNum, code } = req.body;
+
   try {
-    const decoded = jwt.verify(
-      req.params.token,
-      process.env.ACCESS_TOKEN_SECRET
+    const user = await User.findOne({
+      email,
+      verificationCode: code,
+      verificationCodeExpiration: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).send("Invalid or expired verification code.");
+    }
+
+    if (password !== password2) {
+      return res.status(400).send("비밀번호가 일치하지 않습니다.");
+    }
+
+    if (user.verificationCodeExpiration < Date.now()) {
+      return res.status(400).send("코드 유효기간 만료.");
+    }
+
+    await User.findOneAndUpdate(
+      { email },
+      {
+        nickname,
+        password: await bcrypt.hash(password, 5),
+        characterNum,
+        verificationCode: undefined,
+        verificationCodeExpiration: undefined,
+        isVerified: true,
+        code: undefined,
+      },
+      { new: true }
     );
-    console.log(decoded);
 
-    const user = await User.findById(decoded.userId);
-    if (!user) return res.status(400).send("User not found.");
-
-    user.isVerified = true;
-    await user.save();
-
-    console.log("Email verification successful.");
-    return res.redirect("/login");
+    return res.status(200).json({ message: "success" });
   } catch (err) {
-    return res.status(400).send("Invalid or expired token.");
+    return res.status(400).send("An error occurred during email verification.");
   }
 };
 
+// postman 체크 완
+export const postLogin = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  const user = await User.validateUser(email, password);
+  if (!user) {
+    return res.status(401).send("유효하지않은 인증입니다.");
+  }
+
+  const verifyPassword = await bcrypt.compare(password, user.password);
+  if (!verifyPassword) {
+    return res.status(400).send("비밀번호가 일치하지 않습니다.");
+  }
+
+  return res.status(200).json(user);
+};
+
 export const getSearchUser = async (req, res, next) => {
-  const { searchUser } = req.query;
+  const { user } = req.query;
 
   let users = [];
-  if (searchUser) {
+  if (user) {
     users = await User.find({
       nickname: {
-        $regex: new RegExp(searchUser, "i"),
+        $regex: new RegExp(user, "i"),
       },
     });
   }
 
-  return res.render("search", { pageTitle: "유저 검색", users });
+  return res.status(200).json(users);
 };
 
+//postman check 완
 export const seeUserProfile = async (req, res, next) => {
   const {
     params: { id },
-    session: {
-      user: { _id },
-    },
   } = req;
 
-  const pageOwner = await User.findById(id)
-    .populate("videos")
-    .populate("images");
-  const visitor = await User.findById(_id);
-  let friendExist = false;
-
-  if (visitor.nickname in pageOwner.friends) {
-    friendExist = true;
-  }
+  const pageOwner = await User.findById(id).populate("boards");
 
   if (!pageOwner) {
-    return res
-      .status(404)
-      .render("404", { pageTitle: "User not found", friendExist });
+    return res.status(404).json({ message: "User not found" });
   }
 
-  return res.render("users/profile", {
-    pageTitle: `${pageOwner.nickname} Profile`,
-    pageOwner,
-    friendExist,
-  });
+  return res.status(200).json(pageOwner);
 };
 
-export const getEdit = (req, res, next) => {
-  return res.render("users/edit-profile", { pageTitle: "Edit Profile" });
-};
-
-export const postEdit = async (req, res, next) => {
-  const {
-    session: {
-      user: { _id, email: sessionEmail, nickname: sessionNickname },
-    },
-    body: { email, nickname },
-  } = req;
+//postman check 완
+export const userInfoEdit = async (req, res, next) => {
+  const { email, nickname, characterNum } = req.body;
+  const findUser = await User.findOne({ email });
 
   let InfoToChange = [];
-  if (email !== sessionEmail) {
-    InfoToChange.push({ email });
+  if (characterNum !== findUser.characterNum) {
+    InfoToChange.push({ characterNum });
   }
-  if (nickname !== sessionNickname) {
+  if (nickname !== findUser.nickname) {
     InfoToChange.push({ nickname });
   }
   if (InfoToChange.length > 0) {
     const user = await User.findOne({ $or: InfoToChange });
-    if (user && user._id.toString() !== _id) {
-      return res.status(404).render("users/edit-profile", {
-        pageTitle: "Edit Profile",
-        errMessage: "이미 존재하는 아이디(또는 메일)입니다.",
+    if (user) {
+      return res.status(404).json({
+        message: "이미 존재하는 아이디(또는 메일)입니다.",
       });
     }
   }
 
-  const updatedUser = await User.findByIdAndUpdate(
-    _id,
+  await User.findOneAndUpdate(
+    { email },
     {
-      email,
+      characterNum,
       nickname,
     },
     { new: true }
   );
-  req.session.user = updatedUser;
 
-  return res.redirect("/");
+  return res.status(200).json({ message: "success" });
 };
 
-export const getGuestbook = async (req, res, next) => {
-  return res.render("guestbook", { pageTitle: "방명록 남기기" });
-};
-
-export const postGuestbook = async (req, res, next) => {
+//postman check 완
+export const registerGuestbook = async (req, res, next) => {
   const {
-    session: {
-      user: { _id },
-    },
-    body: { content },
+    body: { email, content },
     params: { id },
   } = req;
 
-  const writer = await User.findById(_id);
+  const writer = await User.findOne({ email });
   const receiver = await User.findById(id);
   const guestbook = await Guestbook.create({
     content,
@@ -254,48 +200,39 @@ export const postGuestbook = async (req, res, next) => {
   receiver.guestbooks.push(guestbook);
   await receiver.save();
 
-  return res.redirect(`/user/${receiver.id}`);
+  return res.status(200).json(receiver);
 };
 
+//postman check 완
 export const checkGuestbook = async (req, res, next) => {
-  const guestbooks = await Guestbook.find().populate("writer");
+  const { id } = req.params;
+  const pageOwner = await User.findById(id).populate("guestbooks");
 
-  return res.render("users/myGuestbooks", { pageTitle: "방명록", guestbooks });
+  return res.status(200).json(pageOwner.guestbooks);
 };
 
-export const getChangePassword = (req, res, next) => {
-  return res.render("users/changePassword", { pageTitle: "비밀번호 변경" });
-};
-
-export const postChangePassword = async (req, res, next) => {
-  const {
-    session: {
-      user: { _id },
-    },
-    body: { oldPassword, newPassword, newPassword1 },
-  } = req;
-  const user = await User.findById(_id);
+//postman check 완
+export const password = async (req, res, next) => {
+  const { email, oldPassword, newPassword, newPassword1 } = req.body;
+  const user = await User.findOne({ email });
 
   if (newPassword !== newPassword1) {
-    return res.status(400).render("users/change-pw", {
-      pageTitle: "Change Password",
-      errMessage: "새 비밀번호가 일치하지 않습니다.",
+    return res.status(400).json({
+      message: "새 비밀번호가 일치하지 않습니다.",
     });
   }
 
   const checkPassword = await bcrypt.compare(oldPassword, user.password);
   if (!checkPassword) {
-    return res.status(400).render("users/change-pw", {
-      pageTitle: "Change Password",
+    return res.status(400).json({
       errMessage: "비밀번호가 일치하지 않습니다.",
     });
   }
 
-  user.password = newPassword;
+  user.password = await bcrypt.hash(newPassword, 5);
   await user.save();
-  req.session.user.password = user.password;
 
-  return res.redirect("/users/logout");
+  return res.status(200).json({ message: "success" });
 };
 
 /*------------------ Controllers for API ROUTER ------------------*/

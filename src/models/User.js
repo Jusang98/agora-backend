@@ -14,24 +14,24 @@ const userSchema = new mongoose.Schema({
   nickname: {
     type: String,
     required: true,
-    unique: true,
   },
   characterNum: {
     type: Number,
     required: true,
   },
+  verificationCode: {
+    type: String,
+    required: false,
+  },
+  verificationCodeExpiration: {
+    type: Date,
+    required: false,
+  },
   isVerified: { type: Boolean, default: false },
   friends: [{ type: String }],
   friendsRequests: [{ type: String }],
-  videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }],
-  images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
+  boards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Board" }],
   guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Guestbook" }],
-});
-
-//Hashing password before save User Info
-userSchema.pre("save", async function () {
-  if (this.isModified("password"))
-    this.password = await bcrypt.hash(this.password, 5);
 });
 
 userSchema.static("validateUser", async (email, password) => {

@@ -26,7 +26,6 @@ class PlayerBall {
     this.socket = socket;
     this.x = startX;
     this.z = startZ;
-    this.color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   }
 
   get id() {
@@ -75,9 +74,9 @@ io.on("connection", (socket) => {
 
   socket.onAny((event) => {
     try {
-      // if (event != 'send_location') {
-      console.log(`socket 이벤트: ${event}`);
-      // }
+      if (event != "send_location") {
+        console.log(`socket 이벤트: ${event}`);
+      }
     } catch (err) {
       console.error(`${event}에서 에러 발생: ${err}`);
     }
@@ -98,9 +97,19 @@ io.on("connection", (socket) => {
       const newBall = joinGame(socket, socket.roomId);
       const roomPlayerCount = countRoomPlayers(socket.roomId);
 
-      // 클라이언트에게 입장한 유저 수를 보내기 위해 welcome 이벤트를 사용합니다.
+      // 클라이언트에게 입장한 유저 수를 보내는 용도
       io.to(socket.id).emit("welcome", socket.nickname, roomPlayerCount);
-
+      // 새로운 유저
+      io.to(socket.id).emit("new_user", {
+        id: socket.roomId,
+        roomPlayerCount: roomPlayerCount,
+        nickName: socket.nickname,
+      });
+      //기존 유저
+      socket.broadcast.to(socket.roomId).emit("origin_user", {
+        nickName: socket.nickname,
+        enter: "입장",
+      });
       const roomClients = io.sockets.adapter.rooms.get(socket.roomId);
       if (roomClients) {
         for (const clientId of roomClients) {
@@ -113,7 +122,6 @@ io.on("connection", (socket) => {
               id: ball.id,
               x: ball.x,
               z: ball.z,
-              color: ball.color,
             });
           }
         }
@@ -123,7 +131,6 @@ io.on("connection", (socket) => {
         id: socket.nickname,
         x: newBall.x,
         z: newBall.z,
-        color: newBall.color,
       });
 
       console.log(
@@ -143,7 +150,6 @@ io.on("connection", (socket) => {
       id: data.id,
       x: data.x,
       z: data.z,
-      color: data.color,
     });
   });
 
@@ -162,6 +168,10 @@ io.on("connection", (socket) => {
         console.log(
           `${socket.nickname}님이 ${reason}의 이유로 퇴장하셨습니다.`
         );
+        socket.broadcast.to(socket.roomId).emit("origin_user", {
+          nickName: socket.nickname,
+          quit: "퇴장",
+        });
       }
 
       console.log(

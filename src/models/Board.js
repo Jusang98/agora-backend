@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const imageSchema = new mongoose.Schema({
+const boardSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   fileUrl: { type: String, required: true },
   content: { type: String, required: true },
@@ -16,5 +16,5 @@ const imageSchema = new mongoose.Schema({
   },
 });
 
-const Image = mongoose.model("Image", imageSchema);
-export default Image;
+const Board = mongoose.model("Board", boardSchema);
+export default Board;
