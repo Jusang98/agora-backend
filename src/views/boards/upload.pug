@@ -3,10 +3,10 @@ extends ../base
 block content
   if errorMsg
     span= errorMsg
-  img#imagePreview(style="width: 200px; height: 200px; object-fit: cover;")
+  video#videoPreview(style="width: 200px; height: 200px; object-fit: cover;") controls
   form(id="createBoardForm", method="post", action="/boards/upload", enctype="multipart/form-data")
-    label(for="image") 게시물 업로드
-    input(type="file", accept="image/*", required, name="file")
+    label(for="file") 게시물 업로드
+    input(type="file", accept="image/*,video/*", required, name="file")
     input(placeholder="title", type="text", required, name="title")
     input(placeholder="Content", type="text", required, name="content")
     input(type="submit", value="Create Board")
@@ -14,10 +14,16 @@ block content
   script.
     $(document).ready(function() {
       $('#createBoardForm input[name=file]').change(function(e) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          $('#imagePreview').attr('src', e.target.result);
-        };
-        reader.readAsDataURL(e.target.files[0]);
+        const file = e.target.files[0];
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            $('#videoPreview').replaceWith('<img id="imagePreview" src="' + e.target.result + '" style="width: 200px; height: 200px; object-fit: cover;">');
+          };
+          reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+          const url = URL.createObjectURL(file);
+          $('#videoPreview').attr('src', url);
+        }
       });
     });

@@ -35,16 +35,6 @@ export const postLogin = async (req, res, next) => {
   req.session.user = user;
 
   return res.redirect('/');
-
-  /*
-  const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET);
-
-  return res.status(200).json({
-    code: 200,
-    message: "token is created",
-    token: token,
-  });
-  */
 };
 
 export const logout = (req, res, next) => {
