@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import multer from "multer";
-
+import { s3Upload } from "../util/s3";
 export const corsMiddleware = (req, res, next) => {
   const allowedOrigins = [
     "13.209.19.79:8080",
@@ -28,6 +28,7 @@ export const multerMiddlewareVideo = multer({
 export const multerMiddlewareImage = multer({
   dest: "uploads/images",
 });
+export const multerMiddlewareBoard = s3Upload;
 
 //s3 업로드 용 코드
 const storage = multer.memoryStorage(); // 파일을 디스크에 저장하지 않고 메모리에 유지하도록 설정
