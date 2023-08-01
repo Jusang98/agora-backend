@@ -1,0 +1,20 @@
+extends ../base
+
+block content
+  - const urlObject = new URL(board.fileUrl);
+  - const filePath = urlObject.pathname;
+  if filePath.endsWith('.mp4') || filePath.endsWith('.webm') || filePath.endsWith('.mov')
+    video(controls)
+      source(src=`${board.fileUrl}`, type=`video/${filePath.split('.').pop()}`)
+  else
+    img(src=`${board.fileUrl}`)
+  div
+    h4=board.title
+    p=board.content
+    small= board.createdAt
+    br
+  if loggedInUser
+    if String(board.owner._id) === String(loggedInUser._id)
+      a(href=`${board.id}/edit`) Edit board &rarr;
+      br
+      a(href=`${board.id}/delete`) Delete board &rarr;

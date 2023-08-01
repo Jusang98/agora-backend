@@ -1,0 +1,10 @@
+extends ../base
+include ../mixins/friends
+
+block content
+    h1 친구 목록
+    if user.friends.length === 0
+        h1 나만 친구 없엉 ㅠ_ㅠ
+    else
+    each friend in user.friends
+        +showFriendsList(friend)
