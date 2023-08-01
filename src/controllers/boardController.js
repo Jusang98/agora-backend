@@ -2,9 +2,9 @@ import Board from '../models/Board';
 import User from '../models/User';
 import { uploadFileToS3 } from '../../util/s3';
 //수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
-export const getUserBoards = async (req, res, next) => {
-  const { id } = req.params; // 유저의 아이디
-  const user = await User.findById(id).populate('boards');
+export const getBoardList = async (req, res, next) => {
+  const { userId } = req.params; // 유저의 아이디
+  const user = await User.findById(userId).populate('boards');
 
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -15,6 +15,23 @@ export const getUserBoards = async (req, res, next) => {
   }
 
   return res.status(200).json(user.boards);
+};
+
+// 추가 -> 해당 게시물 id 받아서 그 게시물 정보 보내줌
+export const getBoard = async (req, res, next) => {
+  const { boardId } = req.params; // 게시물의 아이디
+
+  try {
+    const board = await Board.findById(boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    return res.status(200).json(board);
+  } catch (error) {
+    console.error('Error while fetching the board:', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
 };
 
 export const deleteBoard = async (req, res, next) => {

@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Poly World API
+  description: SOPT SERVER SEMINAR
+  license:
+    name: Sangju
+servers:
+  - url: 3.35.5.145:8080:8000/ #자신의 포트번호
+
+#Paths api 경로 지정
+paths: {"./routes/*.js', './swagger/*"}

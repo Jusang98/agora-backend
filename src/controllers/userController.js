@@ -25,7 +25,7 @@ export const verifyUserCode = async (req, res, next) => {
       email,
       password: '1',
       nickname: 'temporary',
-      characterNum: '1',
+      houseNum: '1',
       verificationCode,
       verificationCodeExpiration,
     });
@@ -90,7 +90,7 @@ export const postUserRegister = async (req, res, next) => {
       {
         nickname,
         password: await bcrypt.hash(password, 5),
-        characterNum,
+        houseNum,
         verificationCode: undefined,
         verificationCodeExpiration: undefined,
         isVerified: true,
@@ -137,54 +137,6 @@ export const getSearchUser = async (req, res, next) => {
   return res.status(200).json(users);
 };
 
-//postman check 완
-export const seeUserProfile = async (req, res, next) => {
-  const {
-    params: { id },
-  } = req;
-
-  const pageOwner = await User.findById(id).populate('boards');
-
-  if (!pageOwner) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-
-  return res.status(200).json(pageOwner);
-};
-
-//postman check 완
-export const userInfoEdit = async (req, res, next) => {
-  const { email, nickname, characterNum } = req.body;
-  const findUser = await User.findOne({ email });
-
-  let InfoToChange = [];
-  if (characterNum !== findUser.characterNum) {
-    InfoToChange.push({ characterNum });
-  }
-  if (nickname !== findUser.nickname) {
-    InfoToChange.push({ nickname });
-  }
-  if (InfoToChange.length > 0) {
-    const user = await User.findOne({ $or: InfoToChange });
-    if (user) {
-      return res.status(404).json({
-        message: '이미 존재하는 아이디(또는 메일)입니다.',
-      });
-    }
-  }
-
-  await User.findOneAndUpdate(
-    { email },
-    {
-      characterNum,
-      nickname,
-    },
-    { new: true }
-  );
-
-  return res.status(200).json({ message: 'success' });
-};
-
 export const registerGuestbook = async (req, res, next) => {
   const {
     body: { email, content },
@@ -216,30 +168,6 @@ export const checkGuestbook = async (req, res, next) => {
   });
 
   return res.status(200).json(pageOwner.guestbooks);
-};
-
-//postman check 완
-export const password = async (req, res, next) => {
-  const { email, oldPassword, newPassword, newPassword1 } = req.body;
-  const user = await User.findOne({ email });
-
-  if (newPassword !== newPassword1) {
-    return res.status(400).json({
-      message: '새 비밀번호가 일치하지 않습니다.',
-    });
-  }
-
-  const checkPassword = await bcrypt.compare(oldPassword, user.password);
-  if (!checkPassword) {
-    return res.status(400).json({
-      errMessage: '비밀번호가 일치하지 않습니다.',
-    });
-  }
-
-  user.password = await bcrypt.hash(newPassword, 5);
-  await user.save();
-
-  return res.status(200).json({ message: 'success' });
 };
 
 /*------------------ Controllers for API ROUTER ------------------*/
