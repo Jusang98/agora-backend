@@ -64,7 +64,7 @@ export const verifyUserCode = async (req, res, next) => {
 };
 
 export const postUserRegister = async (req, res, next) => {
-  const { email, password, password2, nickname, characterNum, code } = req.body;
+  const { email, password, password2, nickname, houseNum, code } = req.body;
 
   try {
     const user = await User.findOne({
@@ -147,10 +147,10 @@ export const registerGuestbook = async (req, res, next) => {
   const receiver = await User.findById(id);
   const guestbook = await Guestbook.create({
     content,
-    writer,
-    receiver,
+    writer: writer._id,
+    receiver: receiver._id,
   });
-  receiver.guestbooks.push(guestbook);
+  receiver.guestbooks.push(guestbook._id);
   await receiver.save();
 
   return res.status(200).json(receiver);
@@ -196,7 +196,7 @@ export const sendFriendReq = async (req, res, next) => {
 };
 
 export const handleFriendReq = async (req, res, next) => {
-  const { from, to, action } = req.body;
+  const { from, to } = req.body;
 
   try {
     const fromUser = await User.findOne({ email: from });
@@ -210,15 +210,15 @@ export const handleFriendReq = async (req, res, next) => {
       (req) => req.toString() !== fromUser.nickname.toString()
     );
 
-    if (action === 'accept') {
-      fromUser.friends.push(toUser.nickname);
-      toUser.friends.push(fromUser.nickname);
-    }
+    // if (action === 'accept') {
+    fromUser.friends.push(toUser.nickname);
+    toUser.friends.push(fromUser.nickname);
+    // }
 
     await fromUser.save();
     await toUser.save();
 
-    res.json({ message: `Friend request ${action}ed` });
+    res.status(200).json({ message: `Friend req Pass` });
   } catch (error) {
     res.status(500).json({ message: 'Something went wrong' });
   }

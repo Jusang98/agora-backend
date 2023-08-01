@@ -55,21 +55,22 @@ export const registerBoard = async (req, res, next) => {
     const { title, content, email } = req.body;
 
     const user = await User.findOne({ email });
-    // 파일을 S3에 업로드하고, 업로드된 파일의 S3 URL을 얻어오는 함수
-    const fileUrl = await uploadFileToS3(req.file);
-    // 게시물 생성
+    const fileUrlFull = await uploadFileToS3(req.file);
+
+    let extensionEnd = fileUrlFull.lastIndexOf('?');
+    let fileUrl = fileUrlFull.substring(0, extensionEnd);
+
     const createdBoard = await Board.create({
       title,
       content,
-      fileUrl, // S3에서 얻어온 URL을 게시물의 fileUrl 속성으로 저장
-      owner: user,
+      fileUrl,
+      owner: user._id,
     });
 
-    // 게시물 생성 성공 시, 유저의 boards 배열에 게시물 ID 추가;
     user.boards.push(createdBoard);
     await user.save();
     console.log(fileUrl);
-    return res.status(200).json(createdBoard); //  return res.status(200), json(user.boards); 문법 오류 고침
+    return res.status(200).json(createdBoard);
   } catch (err) {
     console.error('Error while creating board:', err);
     return res.status(400).json({
@@ -78,28 +79,29 @@ export const registerBoard = async (req, res, next) => {
   }
 };
 
-// 수정 tv에 나오는 video용 함수
 export const registerVideo = async (req, res, next) => {
   try {
     const { email } = req.body;
     const title = 'tv';
     const content = 'tv';
     const user = await User.findOne({ email });
-    // 파일을 S3에 업로드하고, 업로드된 파일의 S3 URL을 얻어오는 함수
-    const fileUrl = await uploadFileToS3(req.file);
-    // 게시물 생성
+
+    const fileUrlFull = await uploadFileToS3(req.file);
+
+    let extensionEnd = fileUrlFull.lastIndexOf('?');
+    let fileUrl = fileUrlFull.substring(0, extensionEnd);
+
     const createdBoard = await Board.create({
       title: title,
       content: content,
-      fileUrl, // S3에서 얻어온 URL을 게시물의 fileUrl 속성으로 저장
-      owner: user,
+      fileUrl,
+      owner: user._id,
     });
 
-    // 게시물 생성 성공 시, 유저의 boards 배열에 게시물 ID 추가;
     user.boards.push(createdBoard);
     await user.save();
     console.log(fileUrl);
-    return res.status(200).json(fileUrl); //  return res.status(200), json(user.boards); 문법 오류 고침
+    return res.status(200).json(fileUrl);
   } catch (err) {
     console.error('Error while creating board:', err);
     return res.status(400).json({
