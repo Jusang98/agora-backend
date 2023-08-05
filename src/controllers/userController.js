@@ -23,7 +23,7 @@ export const verifyUserCode = async (req, res, next) => {
       email,
       password: "1",
       nickname: "temporary",
-      characterNum: "1",
+      houseNum: "1",
       verificationCode,
       verificationCodeExpiration,
     });
@@ -62,7 +62,7 @@ export const verifyUserCode = async (req, res, next) => {
 };
 
 export const postUserRegister = async (req, res, next) => {
-  const { email, password, password2, nickname, characterNum, code } = req.body;
+  const { email, password, password2, nickname, houseNum, code } = req.body;
 
   try {
     const user = await User.findOne({
@@ -88,7 +88,7 @@ export const postUserRegister = async (req, res, next) => {
       {
         nickname,
         password: await bcrypt.hash(password, 5),
-        characterNum,
+        houseNum,
         verificationCode: undefined,
         verificationCodeExpiration: undefined,
         isVerified: true,
@@ -152,12 +152,12 @@ export const seeUserProfile = async (req, res, next) => {
 
 //postman check 완
 export const userInfoEdit = async (req, res, next) => {
-  const { email, nickname, characterNum } = req.body;
+  const { email, nickname, houseNum } = req.body;
   const findUser = await User.findOne({ email });
 
   let InfoToChange = [];
-  if (characterNum !== findUser.characterNum) {
-    InfoToChange.push({ characterNum });
+  if (houseNum !== findUser.houseNum) {
+    InfoToChange.push({ houseNum });
   }
   if (nickname !== findUser.nickname) {
     InfoToChange.push({ nickname });
@@ -174,7 +174,7 @@ export const userInfoEdit = async (req, res, next) => {
   await User.findOneAndUpdate(
     { email },
     {
-      characterNum,
+      houseNum,
       nickname,
     },
     { new: true }
@@ -206,11 +206,16 @@ export const registerGuestbook = async (req, res, next) => {
 //postman check 완
 export const checkGuestbook = async (req, res, next) => {
   const { id } = req.params;
-  const pageOwner = await User.findById(id).populate("guestbooks");
+  const pageOwner = await User.findById(id).populate({
+    path: "guestbooks",
+    populate: {
+      path: "writer",
+      select: "nickname",
+    },
+  });
 
   return res.status(200).json(pageOwner.guestbooks);
 };
-
 //postman check 완
 export const password = async (req, res, next) => {
   const { email, oldPassword, newPassword, newPassword1 } = req.body;
@@ -233,6 +238,50 @@ export const password = async (req, res, next) => {
   await user.save();
 
   return res.status(200).json({ message: "success" });
+};
+
+export const getUserContent = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let boards = await Board.find({ owner: id }).sort({ createdAt: -1 });
+    if (!boards) boards = [];
+
+    let guestbooks = await Guestbook.find({
+      $or: [{ writer: id }, { receiver: id }],
+    })
+      .populate("writer", "nickname")
+      .sort({ createdAt: -1 });
+
+    if (!guestbooks) guestbooks = [];
+
+    const imageExtensions = [".png", ".jpeg", ".jpg"];
+    const imageBoards = boards.filter((board) => {
+      // fileUrl로부터 파일 이름 및 확장자 추출
+      const filePath = new URL(board.fileUrl).pathname;
+      const extension = path.extname(filePath);
+
+      return imageExtensions.includes(extension);
+    });
+
+    const mp4Boards = boards.filter((board) => {
+      // fileUrl로부터 파일 이름 및 확장자 추출
+      const filePath = new URL(board.fileUrl).pathname;
+      const extension = path.extname(filePath);
+
+      return extension === ".mp4";
+    });
+
+    return res.status(200).json({ imageBoards, guestbooks, mp4Boards });
+  } catch (error) {
+    console.error("Error while fetching user content:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
 };
 
 /*------------------ Controllers for API ROUTER ------------------*/
@@ -261,7 +310,7 @@ export const sendFriendReq = async (req, res, next) => {
 };
 
 export const handleFriendReq = async (req, res, next) => {
-  const { from, to, action } = req.body;
+  const { from, to } = req.body;
 
   try {
     const fromUser = await User.findOne({ email: from });
@@ -275,15 +324,13 @@ export const handleFriendReq = async (req, res, next) => {
       (req) => req.toString() !== fromUser.nickname.toString()
     );
 
-    if (action === "accept") {
-      fromUser.friends.push(toUser.nickname);
-      toUser.friends.push(fromUser.nickname);
-    }
+    fromUser.friends.push(toUser.nickname);
+    toUser.friends.push(fromUser.nickname);
 
     await fromUser.save();
     await toUser.save();
 
-    res.json({ message: `Friend request ${action}ed` });
+    res.json({ message: `Friend request success` });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong" });
   }

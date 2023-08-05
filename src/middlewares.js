@@ -1,26 +1,6 @@
 import jwt from "jsonwebtoken";
 import multer from "multer";
 
-export const corsMiddleware = (req, res, next) => {
-  const allowedOrigins = [
-    "13.209.19.79:8080",
-    "localhost:3000",
-    "15.165.161.217:8080",
-    "15.164.176.168:8080",
-    "3.35.5.145:8080",
-  ];
-
-  const origin = req.headers;
-  if (allowedOrigins.includes(origin.host)) {
-    res.setHeader("Access-Control-Allow-Origin", origin.host);
-    res.setHeader("Access-Control-Allow-Methods", "*"); // 모든 메소드 허용
-  } else {
-    return res.status(403).send("Forbidden");
-  }
-
-  next();
-};
-
 export const multerMiddlewareVideo = multer({
   dest: "uploads/videos",
 });
