@@ -7,30 +7,46 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  avatarUrl: { type: String },
-  socialOnly: { type: Boolean, default: false },
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   password: {
     type: String,
+    required: true,
   },
-  name: {
+  nickname: {
     type: String,
     required: true,
   },
-  videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video" }],
-  location: String,
+  houseNum: {
+    type: Number,
+    required: true,
+  },
+  verificationCode: {
+    type: String,
+    required: false,
+  },
+  verificationCodeExpiration: {
+    type: Date,
+    required: false,
+  },
+  isVerified: { type: Boolean, default: false },
+  friends: [{ type: String }],
+  friendsRequests: [{ type: String }],
+  boards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Board" }],
+  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Guestbook" }],
 });
 
-//Hashing password before save User Info
-userSchema.pre("save", async function () {
-  if (this.isModified("password"))
-    this.password = await bcrypt.hash(this.password, 5);
+userSchema.static("validateUser", async (email, password) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    return null;
+  }
+
+  const validPassword = await bcrypt.compare(password, user.password);
+  if (!validPassword) {
+    return null;
+  }
+
+  return user;
 });
 
 const User = mongoose.model("User", userSchema);
-
 export default User;

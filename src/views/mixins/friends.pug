@@ -1,0 +1,6 @@
+mixin showFriendsList(arg)
+    div
+        h1
+            a(href=`/user/${arg.id}`) #{arg.nickname}
+        small=arg.createdAt
+        hr

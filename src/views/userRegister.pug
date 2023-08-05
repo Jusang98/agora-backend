@@ -1,9 +1,12 @@
 extends base
 
-block content 
+block content
+    if errMesssage
+        span=errMessage
     form(method="POST")
-        input(placeholder="E-mail", type="email", name="user_email", required)
-        input(placeholder="Password", type="password", name="user_pwd", required)
-        input(placeholder="닉네임", type="text", name="user_nickname", required)
-        input(placeholder="캐릭터선택", type="text", name="user_character_num", required)
-        input(type="submit", value="회원 가입")
+        input(placeholder="E-mail", type="email", name="email", required)
+        input(placeholder="닉네임", type="text", name="nickname", required)
+        input(placeholder="Password", type="password", name="password", required)
+        input(placeholder="Password 확인", type="password", name="password2", required)
+        input(placeholder="캐릭터 선택", type="number", name="characterNum", required)
+        input(type="submit", value="Join")

@@ -1,0 +1,119 @@
+/user:
+  post:
+    tags:
+      - User
+    summary: 회원가입 POST
+    responses:
+      "200":
+        description: User registration was successful
+      "400":
+        description: User registration was not successful
+
+/user/verify:
+  post:
+    tags:
+      - User
+    summary: 유저 인증 POST
+    responses:
+      "200":
+        description: Code verified successfully
+      "400":
+        description: Code verification was not successful
+
+/user/login:
+  post:
+    tags:
+      - User
+    summary: 로그인 POST
+    responses:
+      "200":
+        description: User login was successful
+      "400":
+        description: User login was not successful
+
+/user/{id}/guestbook:
+  post:
+    tags:
+      - User
+    summary: 방명록 작성 POST
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Post was successful
+      "400":
+        description: Post was not successful
+
+/user/{id}/content:
+  get:
+    tags:
+      - User
+    summary: 유저의 아이디를 통해 모든 컨텐츠(게시글,방명록) GET
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: A user's content data
+      "404":
+        description: No user found
+
+/user/{id}/guestbooks:
+  get:
+    tags:
+      - User
+    summary: 유저 아이디를 통해 모든 방명록 GET
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: A user's guestbook data
+      "404":
+        description: No user found
+
+/user/sendFriendRequest:
+  post:
+    tags:
+      - User
+    summary: 친구 요청 보내기 POST
+    responses:
+      "200":
+        description: Friend request was sent successfully
+      "400":
+        description: Friend request was not sent successfully
+
+/user/handleFriendRequest:
+  post:
+    tags:
+      - User
+    summary: 친구 요청 핸들링(수락 거절?) POST
+    responses:
+      "200":
+        description: Friend request was handled successfully
+      "400":
+        description: Friend request was not handled successfully
+
+/user/search:
+  get:
+    tags:
+      - User
+    summary: 유저 검색 GET
+    responses:
+      "200":
+        description: Search was successful
+      "400":
+        description: Search was not successful
