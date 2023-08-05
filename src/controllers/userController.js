@@ -3,7 +3,9 @@ import bcrypt from "bcrypt";
 import User from "../models/User";
 import Guestbook from "../models/Guestbook";
 import nodemailer from "nodemailer";
-
+import Board from "../models/Board";
+import path from "path";
+import { URL } from "url";
 //postman 체크 완
 export const verifyUserCode = async (req, res, next) => {
   const { email } = req.body;
@@ -136,54 +138,6 @@ export const getSearchUser = async (req, res, next) => {
 };
 
 //postman check 완
-export const seeUserProfile = async (req, res, next) => {
-  const {
-    params: { id },
-  } = req;
-
-  const pageOwner = await User.findById(id).populate("boards");
-
-  if (!pageOwner) {
-    return res.status(404).json({ message: "User not found" });
-  }
-
-  return res.status(200).json(pageOwner);
-};
-
-//postman check 완
-export const userInfoEdit = async (req, res, next) => {
-  const { email, nickname, houseNum } = req.body;
-  const findUser = await User.findOne({ email });
-
-  let InfoToChange = [];
-  if (houseNum !== findUser.houseNum) {
-    InfoToChange.push({ houseNum });
-  }
-  if (nickname !== findUser.nickname) {
-    InfoToChange.push({ nickname });
-  }
-  if (InfoToChange.length > 0) {
-    const user = await User.findOne({ $or: InfoToChange });
-    if (user) {
-      return res.status(404).json({
-        message: "이미 존재하는 아이디(또는 메일)입니다.",
-      });
-    }
-  }
-
-  await User.findOneAndUpdate(
-    { email },
-    {
-      houseNum,
-      nickname,
-    },
-    { new: true }
-  );
-
-  return res.status(200).json({ message: "success" });
-};
-
-//postman check 완
 export const registerGuestbook = async (req, res, next) => {
   const {
     body: { email, content },
@@ -194,16 +148,16 @@ export const registerGuestbook = async (req, res, next) => {
   const receiver = await User.findById(id);
   const guestbook = await Guestbook.create({
     content,
-    writer,
-    receiver,
+    writer: writer._id,
+    receiver: receiver._id,
   });
-  receiver.guestbooks.push(guestbook);
+  receiver.guestbooks.push(guestbook._id);
   await receiver.save();
 
   return res.status(200).json(receiver);
 };
 
-//postman check 완
+// 수정 - 닉네임도 같이보내게
 export const checkGuestbook = async (req, res, next) => {
   const { id } = req.params;
   const pageOwner = await User.findById(id).populate({
@@ -238,50 +192,6 @@ export const password = async (req, res, next) => {
   await user.save();
 
   return res.status(200).json({ message: "success" });
-};
-
-export const getUserContent = async (req, res, next) => {
-  const { id } = req.params;
-
-  try {
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    let boards = await Board.find({ owner: id }).sort({ createdAt: -1 });
-    if (!boards) boards = [];
-
-    let guestbooks = await Guestbook.find({
-      $or: [{ writer: id }, { receiver: id }],
-    })
-      .populate("writer", "nickname")
-      .sort({ createdAt: -1 });
-
-    if (!guestbooks) guestbooks = [];
-
-    const imageExtensions = [".png", ".jpeg", ".jpg"];
-    const imageBoards = boards.filter((board) => {
-      // fileUrl로부터 파일 이름 및 확장자 추출
-      const filePath = new URL(board.fileUrl).pathname;
-      const extension = path.extname(filePath);
-
-      return imageExtensions.includes(extension);
-    });
-
-    const mp4Boards = boards.filter((board) => {
-      // fileUrl로부터 파일 이름 및 확장자 추출
-      const filePath = new URL(board.fileUrl).pathname;
-      const extension = path.extname(filePath);
-
-      return extension === ".mp4";
-    });
-
-    return res.status(200).json({ imageBoards, guestbooks, mp4Boards });
-  } catch (error) {
-    console.error("Error while fetching user content:", error);
-    return res.status(500).json({ message: "Server Error" });
-  }
 };
 
 /*------------------ Controllers for API ROUTER ------------------*/
@@ -336,3 +246,47 @@ export const handleFriendReq = async (req, res, next) => {
   }
 };
 /*--------------------------------------------------------------- */
+// 수정 추가 해당유저의 id를 가지고 게시물과 방명록을 전부 가져오는거
+export const getUserContent = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let boards = await Board.find({ owner: id }).sort({ createdAt: -1 });
+    if (!boards) boards = [];
+
+    let guestbooks = await Guestbook.find({
+      $or: [{ writer: id }, { receiver: id }],
+    })
+      .populate("writer", "nickname")
+      .sort({ createdAt: -1 });
+
+    if (!guestbooks) guestbooks = [];
+
+    const imageExtensions = [".png", ".jpeg", ".jpg"];
+    const imageBoards = boards.filter((board) => {
+      // fileUrl로부터 파일 이름 및 확장자 추출
+      const filePath = new URL(board.fileUrl).pathname;
+      const extension = path.extname(filePath);
+
+      return imageExtensions.includes(extension);
+    });
+
+    const mp4Boards = boards.filter((board) => {
+      // fileUrl로부터 파일 이름 및 확장자 추출
+      const filePath = new URL(board.fileUrl).pathname;
+      const extension = path.extname(filePath);
+
+      return extension === ".mp4";
+    });
+
+    return res.status(200).json({ imageBoards, guestbooks, mp4Boards });
+  } catch (error) {
+    console.error("Error while fetching user content:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
+};

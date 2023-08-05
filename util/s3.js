@@ -2,8 +2,8 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 const region = process.env.AWS_BUCKET_REGION;
@@ -23,14 +23,14 @@ export const uploadFileToS3 = async (file) => {
     Bucket: bucketName,
     Key: file.originalname,
     Body: file.buffer,
-    ACL: "public-read",
+    ACL: 'public-read',
     ContentType: file.mimetype,
   };
 
   try {
     const command = new PutObjectCommand(params);
     const response = await s3.send(command);
-    console.log("File uploaded successfully:", response);
+    console.log('File uploaded successfully:', response);
 
     const commandToSign = new GetObjectCommand({
       Bucket: bucketName,
@@ -40,11 +40,11 @@ export const uploadFileToS3 = async (file) => {
       expiresIn: 604800,
     });
 
-    console.log("File URL:", s3ObjectUrl);
+    console.log('File URL:', s3ObjectUrl);
 
     return s3ObjectUrl;
   } catch (err) {
-    console.error("Error uploading file:", err);
+    console.error('Error uploading file:', err);
     throw err;
   }
 };

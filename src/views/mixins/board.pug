@@ -1,0 +1,7 @@
+mixin showBoardList(arg)
+    div
+        h4
+            a(href=`/boards/${arg.id}`)= arg.title
+        p=arg.content
+        small=arg.createdAt
+        hr

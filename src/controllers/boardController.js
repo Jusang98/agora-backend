@@ -1,7 +1,8 @@
 import Board from "../models/Board";
 import User from "../models/User";
 import { uploadFileToS3 } from "../../util/s3";
-
+//수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
+//수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
 export const getBoardList = async (req, res, next) => {
   const { userId } = req.params; // 유저의 아이디
   const user = await User.findById(userId).populate("boards");
@@ -17,6 +18,7 @@ export const getBoardList = async (req, res, next) => {
   return res.status(200).json(user.boards);
 };
 
+// 추가 -> 해당 게시물 id 받아서 그 게시물 정보 보내줌
 export const getBoard = async (req, res, next) => {
   const { boardId } = req.params; // 게시물의 아이디
 
@@ -67,8 +69,8 @@ export const registerBoard = async (req, res, next) => {
     // 게시물 생성 성공 시, 유저의 boards 배열에 게시물 ID 추가;
     user.boards.push(createdBoard);
     await user.save();
-
-    return res.status(200), json(user.boards);
+    console.log(fileUrl);
+    return res.status(200).json(createdBoard); //  return res.status(200), json(user.boards); 문법 오류 고침
   } catch (err) {
     console.error("Error while creating board:", err);
     return res.status(400).json({

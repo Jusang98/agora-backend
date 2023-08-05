@@ -1,0 +1,43 @@
+extends ../base
+
+block content
+  if errorMsg
+    span= errorMsg
+  video#videoPreview.mediaPreview(controls)
+  form(id="createBoardForm", method="post", action="/boards/upload", enctype="multipart/form-data")
+    label(for="file") 게시물 업로드
+    input(type="file", accept="image/*,video/*", required, name="file")
+    input(placeholder="title", type="text", required, name="title")
+    input(placeholder="Content", type="text", required, name="content")
+    input(type="submit", value="Create Board")
+  style.
+    .mediaPreview {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+    }
+  script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js")
+  script.
+    function previewImage(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        $('#videoPreview').replaceWith('<img id="imagePreview" class="mediaPreview" src="' + e.target.result + '">');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function previewVideo(file) {
+      const url = URL.createObjectURL(file);
+      $('#videoPreview').attr('src', url);
+    }
+
+    $(document).ready(function() {
+      $('#createBoardForm input[name=file]').change(function(e) {
+        const file = e.target.files[0];
+        if (file.type.startsWith('image/')) {
+          previewImage(file);
+        } else if (file.type.startsWith('video/')) {
+          previewVideo(file);
+        }
+      });
+    });
