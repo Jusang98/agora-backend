@@ -87,7 +87,7 @@ export const postUserRegister = async (req, res, next) => {
       return res.status(400).send("코드 유효기간 만료.");
     }
 
-    await User.findOneAndUpdate(
+    const newUser = await User.findOneAndUpdate(
       { email },
       {
         nickname,
@@ -100,6 +100,7 @@ export const postUserRegister = async (req, res, next) => {
       },
       { new: true }
     );
+    await client.sAdd("users", JSON.stringify(newUser));
 
     return res.status(200).json({ message: "success" });
   } catch (err) {
