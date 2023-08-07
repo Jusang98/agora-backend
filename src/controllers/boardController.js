@@ -1,7 +1,7 @@
 import Board from "../models/Board";
 import User from "../models/User";
 import { uploadFileToS3 } from "../../util/s3";
-//수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
+
 //수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
 export const getBoardList = async (req, res, next) => {
   const { userId } = req.params; // 유저의 아이디
