@@ -2,3 +2,6 @@
 .env
 /.vscode
 .vscode
+/src/swagger
+*.yaml
+
