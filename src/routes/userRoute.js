@@ -9,6 +9,7 @@ import {
   postUserRegister,
   postLogin,
   getSearchUser,
+  getRandomUser,
 } from "../controllers/userController";
 
 const userRouter = express.Router();
@@ -22,5 +23,6 @@ userRouter.route("/:id([0-9a-f]{24})/guestbooks").get(checkGuestbook);
 userRouter.route("/sendFriendRequest").post(sendFriendReq);
 userRouter.route("/handleFriendRequest").post(handleFriendReq);
 userRouter.route("/search").get(getSearchUser);
+userRouter.route("/surfing").get(getRandomUser);
 
 export default userRouter;

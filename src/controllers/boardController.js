@@ -1,18 +1,18 @@
-import Board from '../models/Board';
-import User from '../models/User';
-import { uploadFileToS3 } from '../s3';
+import Board from "../models/Board";
+import User from "../models/User";
+import { uploadFileToS3 } from "../s3";
 
 //수정 -> 함수명 변경 + 기존의 코드(empty전송) -> 수정된코드(해당 유저아이디 받아서 작성한 게시물 전부 가져옴)
 export const getBoardList = async (req, res, next) => {
   const { userId } = req.params; // 유저의 아이디
-  const user = await User.findById(userId).populate('boards');
+  const user = await User.findById(userId).populate("boards");
 
   if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: "User not found" });
   }
 
   if (user.boards.length === 0) {
-    return res.status(200).json({ message: 'No boards found for this user' });
+    return res.status(200).json({ message: "No boards found for this user" });
   }
 
   return res.status(200).json(user.boards);
@@ -25,20 +25,20 @@ export const getBoard = async (req, res, next) => {
   try {
     const board = await Board.findById(boardId);
     if (!board) {
-      return res.status(404).json({ message: 'Board not found' });
+      return res.status(404).json({ message: "Board not found" });
     }
 
     return res.status(200).json(board);
   } catch (error) {
-    console.error('Error while fetching the board:', error);
-    return res.status(500).json({ message: 'Server Error' });
+    console.error("Error while fetching the board:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
 export const deleteBoard = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const board = await Board.findById(id).populate('owner');
+    const board = await Board.findById(id).populate("owner");
     const owner = board.owner;
 
     await Board.findByIdAndDelete(id);
@@ -72,9 +72,9 @@ export const registerBoard = async (req, res, next) => {
     console.log(fileUrl);
     return res.status(200).json(createdBoard); //  return res.status(200), json(user.boards); 문법 오류 고침
   } catch (err) {
-    console.error('Error while creating board:', err);
+    console.error("Error while creating board:", err);
     return res.status(400).json({
-      message: 'fail',
+      message: "fail",
     });
   }
 };
@@ -82,8 +82,8 @@ export const registerBoard = async (req, res, next) => {
 export const registerVideo = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const title = 'tv';
-    const content = 'tv';
+    const title = "tv";
+    const content = "tv";
     const user = await User.findOne({ email });
     // 파일을 S3에 업로드하고, 업로드된 파일의 S3 URL을 얻어오는 함수
     const fileUrl = await uploadFileToS3(req.file);
@@ -101,9 +101,9 @@ export const registerVideo = async (req, res, next) => {
     console.log(fileUrl);
     return res.status(200).json(fileUrl); //  return res.status(200), json(user.boards); 문법 오류 고침
   } catch (err) {
-    console.error('Error while creating board:', err);
+    console.error("Error while creating board:", err);
     return res.status(400).json({
-      message: 'fail',
+      message: "fail",
     });
   }
 };
@@ -136,14 +136,14 @@ export const handleBoardEvent = async (req, rex, next) => {
   }
 
   switch (action) {
-    case 'view':
+    case "view":
       board.meta.views = board.meta.views + 1;
       break;
-    case 'like':
+    case "like":
       board.meta.likes = board.meta.likes + 1;
       break;
     default:
-      return res.status(400).send('Invalid action');
+      return res.status(400).send("Invalid action");
   }
 
   await board.save();

@@ -6,6 +6,8 @@ import nodemailer from "nodemailer";
 import Board from "../models/Board";
 import path from "path";
 import { URL } from "url";
+import { client } from "../db";
+
 //postman 체크 완
 export const verifyUserCode = async (req, res, next) => {
   const { email } = req.body;
@@ -289,4 +291,15 @@ export const getUserContent = async (req, res, next) => {
     console.error("Error while fetching user content:", error);
     return res.status(500).json({ message: "Server Error" });
   }
+};
+
+export const getRandomUser = async (req, res, next) => {
+  await client.get("users", (err, reply) => {
+    let users = JSON.parse(reply);
+    let user = users.shift();
+    users.push(user);
+    client.set("users", JSON.stringify(users));
+
+    return res.status(200).json(user);
+  });
 };
