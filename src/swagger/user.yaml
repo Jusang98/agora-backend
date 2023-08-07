@@ -120,6 +120,8 @@
 
 /user/surfing:
   get:
+  tags:
+      - User
     summary: 랜덤 유저 GET
     description: This API endpoint returns a random user from the users list.
     responses:
