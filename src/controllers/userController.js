@@ -8,6 +8,24 @@ import path from "path";
 import { URL } from "url";
 import { client } from "../db";
 
+const getFriendsInfo = async (fromUser) => {
+  let friendsInfoArray = [];
+  const fromUserFriends = fromUser.friends;
+  for (const fromUserFriend of fromUserFriends) {
+    const findUserFriend = await User.findOne({ nickname: fromUserFriend });
+    const findUserFriendIdAndNickname = Object.entries(
+      findUserFriend.toObject()
+    ).reduce((obj, [key, value]) => {
+      if (key === "_id" || key === "nickname" || key === "houseNum") {
+        obj[key] = value;
+      }
+      return obj;
+    }, {});
+    friendsInfoArray.push(findUserFriendIdAndNickname);
+  }
+  return friendsInfoArray;
+};
+
 //postman 체크 완
 export const verifyUserCode = async (req, res, next) => {
   const { email } = req.body;
@@ -243,9 +261,11 @@ export const handleFriendReq = async (req, res, next) => {
     await fromUser.save();
     await toUser.save();
 
-    res.json({ message: `Friend request success` });
+    const friendsInfoArray = getFriendsInfo(fromUser);
+
+    return res.status(200).json(friendsInfoArray);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
 /*--------------------------------------------------------------- */
@@ -255,6 +275,7 @@ export const getUserContent = async (req, res, next) => {
 
   try {
     const user = await User.findById(id);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -287,7 +308,13 @@ export const getUserContent = async (req, res, next) => {
       return extension === ".mp4";
     });
 
-    return res.status(200).json({ imageBoards, guestbooks, mp4Boards });
+    const friendsInfoArray = getFriendsInfo(user);
+    return res.status(200).json({
+      imageBoards,
+      guestbooks,
+      mp4Boards,
+      friendsInfoArray,
+    });
   } catch (error) {
     console.error("Error while fetching user content:", error);
     return res.status(500).json({ message: "Server Error" });

@@ -28,5 +28,5 @@ const getAllUsers = async () => {
 };
 
 getAllUsers().then((users) => {
-  console.log("Users are shuffled and stored in Redis.", users);
+  console.log("Users are shuffled and stored in Redis.");
 });
