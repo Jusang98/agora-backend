@@ -82,15 +82,14 @@ export const registerBoard = async (req, res, next) => {
 export const registerVideo = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const title = "tv";
-    const content = "tv";
+
     const user = await User.findOne({ email });
     // 파일을 S3에 업로드하고, 업로드된 파일의 S3 URL을 얻어오는 함수
     const fileUrl = await uploadFileToS3(req.file);
     // 게시물 생성
     const createdBoard = await Board.create({
-      title: title,
-      content: content,
+      title: "tv",
+      content: "tv",
       fileUrl, // S3에서 얻어온 URL을 게시물의 fileUrl 속성으로 저장
       owner: user,
     });

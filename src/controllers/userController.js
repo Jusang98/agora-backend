@@ -261,7 +261,7 @@ export const handleFriendReq = async (req, res, next) => {
     await fromUser.save();
     await toUser.save();
 
-    const friendsInfoArray = getFriendsInfo(fromUser);
+    const friendsInfoArray = await getFriendsInfo(fromUser);
 
     return res.status(200).json(friendsInfoArray);
   } catch (error) {
@@ -275,6 +275,7 @@ export const getUserContent = async (req, res, next) => {
 
   try {
     const user = await User.findById(id);
+    const userHouseNum = user.houseNum;
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -308,11 +309,13 @@ export const getUserContent = async (req, res, next) => {
       return extension === ".mp4";
     });
 
-    const friendsInfoArray = getFriendsInfo(user);
+    const friendsInfoArray = await getFriendsInfo(user);
+
     return res.status(200).json({
       imageBoards,
       guestbooks,
       mp4Boards,
+      userHouseNum,
       friendsInfoArray,
     });
   } catch (error) {
@@ -322,12 +325,14 @@ export const getUserContent = async (req, res, next) => {
 };
 
 export const getRandomUser = async (req, res, next) => {
-  await client.get("users", (err, reply) => {
-    let users = JSON.parse(reply);
-    let user = users.shift();
-    users.push(user);
-    client.set("users", JSON.stringify(users));
-
-    return res.status(200).json(user);
-  });
+  const users = await client.get("users");
+  if (!users) {
+    return null;
+  }
+  const parsedUsers = JSON.parse(users);
+  const randomUserId = parsedUsers.shift();
+  const randomUser = await User.findById(randomUserId);
+  parsedUsers.push(randomUserId);
+  client.set("users", JSON.stringify(parsedUsers));
+  return res.status(200).json(randomUser);
 };

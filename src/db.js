@@ -19,12 +19,11 @@ client.once("connect", () => console.log("Redis 연결...!"));
 
 const getAllUsers = async () => {
   const users = await User.find({});
-  for (let i = users.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
-    [users[i], users[j]] = [users[j], users[i]];
-  }
-  client.sAdd("users", JSON.stringify(users));
-  return users;
+  const shuffledUsers = users.map((user) => user._id);
+  shuffledUsers.sort(() => Math.random() - 0.5);
+  const writeableShuffleUsers = shuffledUsers.slice();
+  client.set("users", JSON.stringify(writeableShuffleUsers));
+  return;
 };
 
 getAllUsers().then((users) => {

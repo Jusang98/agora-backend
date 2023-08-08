@@ -18,6 +18,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/user", userRouter);
-app.use("/boards", boardRouter);
+app.use("/board", boardRouter);
 
 export default app;
