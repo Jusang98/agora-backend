@@ -1,12 +1,12 @@
-import crypto from 'crypto';
-import bcrypt from 'bcrypt';
-import User from '../models/User';
-import Guestbook from '../models/Guestbook';
-import nodemailer from 'nodemailer';
-import Board from '../models/Board';
-import path from 'path';
-import { URL } from 'url';
-import { client } from '../db';
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+import User from "../models/User";
+import Guestbook from "../models/Guestbook";
+import nodemailer from "nodemailer";
+import Board from "../models/Board";
+import path from "path";
+import { URL } from "url";
+import { client } from "../db";
 
 const getFriendsInfo = async (fromUser) => {
   let friendsInfoArray = [];
@@ -16,7 +16,7 @@ const getFriendsInfo = async (fromUser) => {
     const findUserFriendIdAndNickname = Object.entries(
       findUserFriend.toObject()
     ).reduce((obj, [key, value]) => {
-      if (key === '_id' || key === 'nickname' || key === 'houseNum') {
+      if (key === "_id" || key === "nickname" || key === "houseNum") {
         obj[key] = value;
       }
       return obj;
@@ -33,26 +33,26 @@ export const verifyUserCode = async (req, res, next) => {
   const userExists = await User.exists({ email }); //username이나 email 둘 중 하나라도 존재한다면 true 반환.
   if (userExists) {
     return res.status(400).json({
-      errMessage: '존재하는 계정 입니다.',
+      errMessage: "존재하는 계정 입니다.",
     });
   }
 
   try {
-    const verificationCode = crypto.randomBytes(3).toString('hex'); // 6자리의 랜덤 인증 코드 생성
+    const verificationCode = crypto.randomBytes(3).toString("hex"); // 6자리의 랜덤 인증 코드 생성
     const verificationCodeExpiration = Date.now() + 3600000;
 
     const newUser = await User.create({
       email,
-      password: '1',
-      nickname: 'temporary',
-      houseNum: '1',
+      password: "1",
+      nickname: "temporary",
+      houseNum: "1",
       verificationCode,
       verificationCodeExpiration,
     });
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
+      service: "gmail",
+      host: "smtp.gmail.com",
       auth: {
         user: process.env.EMAIL_ADDRESS,
         pass: process.env.EMAIL_PASSWORD,
@@ -62,7 +62,7 @@ export const verifyUserCode = async (req, res, next) => {
     const mailOptions = {
       from: process.env.EMAIL_ADDRESS,
       to: newUser.email,
-      subject: 'Email Verification',
+      subject: "Email Verification",
       html: `<h1>1시간 내로 인증 바람!!!</h1><p>Your verification code is: ${verificationCode}</p>`,
     };
     // 링크클릭만 하는게 아니고, 인증번호를 클라이언트한테 보내서 인증번호가 맞으면 우리가 처리하는 식으로 변경하자!
@@ -70,16 +70,16 @@ export const verifyUserCode = async (req, res, next) => {
     await transporter.sendMail(mailOptions, function (err, info) {
       if (err) {
         console.log(err);
-        return res.status(500).send('An error occurred while sending email');
+        return res.status(500).send("An error occurred while sending email");
       } else {
-        console.log('Email sent: ' + info.response);
+        console.log("Email sent: " + info.response);
         return res
           .status(200)
-          .send('Registration successful. Please verify your email.');
+          .send("Registration successful. Please verify your email.");
       }
     });
   } catch (err) {
-    console.error('ERROR :', err);
+    console.error("ERROR :", err);
   }
 };
 
@@ -94,15 +94,15 @@ export const postUserRegister = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(400).send('Invalid or expired verification code.');
+      return res.status(400).send("Invalid or expired verification code.");
     }
 
     if (password !== password2) {
-      return res.status(400).send('비밀번호가 일치하지 않습니다.');
+      return res.status(400).send("비밀번호가 일치하지 않습니다.");
     }
 
     if (user.verificationCodeExpiration < Date.now()) {
-      return res.status(400).send('코드 유효기간 만료.');
+      return res.status(400).send("코드 유효기간 만료.");
     }
 
     const newUser = await User.findOneAndUpdate(
@@ -118,11 +118,11 @@ export const postUserRegister = async (req, res, next) => {
       },
       { new: true }
     );
-    await client.sAdd('users', JSON.stringify(newUser));
+    await client.set("users", JSON.stringify(newUser));
 
-    return res.status(200).json({ message: 'success' });
+    return res.status(200).json({ message: "success" });
   } catch (err) {
-    return res.status(400).send('An error occurred during email verification.');
+    return res.status(400).send("An error occurred during email verification.");
   }
 };
 
@@ -132,12 +132,12 @@ export const postLogin = async (req, res, next) => {
 
   const user = await User.validateUser(email, password);
   if (!user) {
-    return res.status(401).send('유효하지않은 인증입니다.');
+    return res.status(401).send("유효하지않은 인증입니다.");
   }
 
   const verifyPassword = await bcrypt.compare(password, user.password);
   if (!verifyPassword) {
-    return res.status(400).send('비밀번호가 일치하지 않습니다.');
+    return res.status(400).send("비밀번호가 일치하지 않습니다.");
   }
 
   return res.status(200).json(user);
@@ -150,7 +150,7 @@ export const getSearchUser = async (req, res, next) => {
   if (user) {
     users = await User.find({
       nickname: {
-        $regex: new RegExp(user, 'i'),
+        $regex: new RegExp(user, "i"),
       },
     });
   }
@@ -168,12 +168,12 @@ export const registerGuestbook = async (req, res, next) => {
 
     const writer = await User.findOne({ email });
     if (!writer) {
-      return res.status(404).json({ message: '작성자를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: "작성자를 찾을 수 없습니다." });
     }
 
     const receiver = await User.findById(id);
     if (!receiver) {
-      return res.status(404).json({ message: '수신자를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: "수신자를 찾을 수 없습니다." });
     }
 
     const guestbook = await Guestbook.create({
@@ -185,12 +185,12 @@ export const registerGuestbook = async (req, res, next) => {
     await receiver.save();
 
     // 해당 사용자의 모든 guestbooks를 가져오기
-    const userWithGuestbooks = await User.findById(id).populate('guestbooks');
+    const userWithGuestbooks = await User.findById(id).populate("guestbooks");
 
     return res.status(200).json(userWithGuestbooks.guestbooks);
   } catch (error) {
-    console.error('방명록을 등록하는 중 오류 발생:', error);
-    return res.status(500).json({ message: '서버 오류' });
+    console.error("방명록을 등록하는 중 오류 발생:", error);
+    return res.status(500).json({ message: "서버 오류" });
   }
 };
 
@@ -198,10 +198,10 @@ export const registerGuestbook = async (req, res, next) => {
 export const checkGuestbook = async (req, res, next) => {
   const { id } = req.params;
   const pageOwner = await User.findById(id).populate({
-    path: 'guestbooks',
+    path: "guestbooks",
     populate: {
-      path: 'writer',
-      select: 'nickname',
+      path: "writer",
+      select: "nickname",
     },
   });
 
@@ -214,21 +214,21 @@ export const password = async (req, res, next) => {
 
   if (newPassword !== newPassword1) {
     return res.status(400).json({
-      message: '새 비밀번호가 일치하지 않습니다.',
+      message: "새 비밀번호가 일치하지 않습니다.",
     });
   }
 
   const checkPassword = await bcrypt.compare(oldPassword, user.password);
   if (!checkPassword) {
     return res.status(400).json({
-      errMessage: '비밀번호가 일치하지 않습니다.',
+      errMessage: "비밀번호가 일치하지 않습니다.",
     });
   }
 
   user.password = await bcrypt.hash(newPassword, 5);
   await user.save();
 
-  return res.status(200).json({ message: 'success' });
+  return res.status(200).json({ message: "success" });
 };
 
 /*------------------ Controllers for API ROUTER ------------------*/
@@ -239,11 +239,11 @@ export const sendFriendReq = async (req, res, next) => {
   const toUser = await User.findOne({ email: to });
 
   if (!fromUser || !toUser) {
-    return res.status(404).json({ message: 'User not found' });
+    return res.status(404).json({ message: "User not found" });
   }
 
   if (toUser.friends.includes(fromUser.nickname)) {
-    return res.status(400).json({ message: '이미 요청을 보냈습니다' });
+    return res.status(400).json({ message: "이미 요청을 보냈습니다" });
   }
 
   try {
@@ -264,7 +264,7 @@ export const handleFriendReq = async (req, res, next) => {
     const toUser = await User.findOne({ email: to });
 
     if (!fromUser || !toUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     toUser.friendsRequests = toUser.friendsRequests.filter(
@@ -281,7 +281,7 @@ export const handleFriendReq = async (req, res, next) => {
 
     return res.status(200).json(friendsInfoArray);
   } catch (error) {
-    return res.status(500).json({ message: 'Something went wrong' });
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
 /*--------------------------------------------------------------- */
@@ -294,7 +294,7 @@ export const getUserContent = async (req, res, next) => {
     const userHouseNum = user.houseNum;
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     let boards = await Board.find({ owner: id }).sort({ createdAt: -1 });
@@ -303,12 +303,12 @@ export const getUserContent = async (req, res, next) => {
     let guestbooks = await Guestbook.find({
       $or: [{ writer: id }, { receiver: id }],
     })
-      .populate('writer', 'nickname')
+      .populate("writer", "nickname")
       .sort({ createdAt: -1 });
 
     if (!guestbooks) guestbooks = [];
 
-    const imageExtensions = ['.png', '.jpeg', '.jpg'];
+    const imageExtensions = [".png", ".jpeg", ".jpg"];
     const imageBoards = boards.filter((board) => {
       // fileUrl로부터 파일 이름 및 확장자 추출
       const filePath = new URL(board.fileUrl).pathname;
@@ -322,7 +322,7 @@ export const getUserContent = async (req, res, next) => {
       const filePath = new URL(board.fileUrl).pathname;
       const extension = path.extname(filePath);
 
-      return extension === '.mp4';
+      return extension === ".mp4";
     });
 
     const friendsInfoArray = await getFriendsInfo(user);
@@ -335,8 +335,8 @@ export const getUserContent = async (req, res, next) => {
       friendsInfoArray,
     });
   } catch (error) {
-    console.error('Error while fetching user content:', error);
-    return res.status(500).json({ message: 'Server Error' });
+    console.error("Error while fetching user content:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 //수정 나/친구 제외한 유저들 랜덤으로 보내주기
@@ -346,14 +346,14 @@ export const getRandomUser = async (req, res, next) => {
 
     const currentUser = await User.findById(id);
     if (!currentUser) {
-      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    const usersFromRedis = await client.get('users');
+    const usersFromRedis = await client.get("users");
     if (!usersFromRedis) {
       return res
         .status(404)
-        .json({ message: '사용자 목록을 가져올 수 없습니다.' });
+        .json({ message: "사용자 목록을 가져올 수 없습니다." });
     }
 
     const parsedUsers = JSON.parse(usersFromRedis);
@@ -370,7 +370,7 @@ export const getRandomUser = async (req, res, next) => {
     if (eligibleUserIds.length === 0) {
       return res
         .status(404)
-        .json({ message: 'Poly World의 모든 유저가 친구세요;' });
+        .json({ message: "Poly World의 모든 유저가 친구세요;" });
     }
 
     const randomIndex = Math.floor(Math.random() * eligibleUserIds.length);
@@ -379,15 +379,15 @@ export const getRandomUser = async (req, res, next) => {
     const randomUser = await User.findById(randomUserId);
 
     // 캐싱된 사용자 목록 업데이트
-    client.set('users', JSON.stringify(eligibleUserIds));
-    console.log('사용자 친구목록 확인', currentUser.friends);
-    console.log('DB ID 형식확인', typeof randomUserId, typeof id);
-    console.log('DB ID 형식확인', randomUserId, id);
-    console.log('Redis 캐시 확인', parsedUsers);
-    console.log('필터링 로직 확인', eligibleUserIds);
+    client.set("users", JSON.stringify(eligibleUserIds));
+    console.log("사용자 친구목록 확인", currentUser.friends);
+    console.log("DB ID 형식확인", typeof randomUserId, typeof id);
+    console.log("DB ID 형식확인", randomUserId, id);
+    console.log("Redis 캐시 확인", parsedUsers);
+    console.log("필터링 로직 확인", eligibleUserIds);
     return res.status(200).json(randomUser);
   } catch (error) {
-    console.error('랜덤 유저를 가져오는 중 오류 발생:', error);
-    return res.status(500).json({ message: '서버 오류' });
+    console.error("랜덤 유저를 가져오는 중 오류 발생:", error);
+    return res.status(500).json({ message: "서버 오류" });
   }
 };
