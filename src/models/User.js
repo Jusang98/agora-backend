@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -30,11 +30,12 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   friends: [{ type: String }],
   friendsRequests: [{ type: String }],
-  boards: [{ type: mongoose.Schema.Types.ObjectId, ref: "Board" }],
-  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Guestbook" }],
+  boards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Board' }],
+  guestbooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Guestbook' }],
+  // selectboards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Selectboard' }],
 });
 
-userSchema.static("validateUser", async (email, password) => {
+userSchema.static('validateUser', async (email, password) => {
   const user = await User.findOne({ email });
   if (!user) {
     return null;
@@ -48,5 +49,5 @@ userSchema.static("validateUser", async (email, password) => {
   return user;
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 export default User;
