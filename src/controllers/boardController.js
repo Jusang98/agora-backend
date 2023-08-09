@@ -97,7 +97,7 @@ export const registerBoard = async (req, res, next) => {
       title,
       content,
       fileUrl: cleanFileUrl,
-      owner: user,
+      owner: user._id,
     });
 
     user.boards.push(createdBoard);
@@ -105,9 +105,9 @@ export const registerBoard = async (req, res, next) => {
     // addSelectboard(createdBoard);
 
     const imageBoards = await Board.find({
-      owner: user,
-      fileUrl: { $in: [/\.png$/, /\.jpeg$/, /\.jpg$/] },
-    });
+      owner: user._id,  
+      fileUrl: { $in: [/\.png$/, /\.jpeg$/, /\.jpg$/] }
+    }).sort({ createdAt: -1 }); 
 
     return res.status(200).json(imageBoards);
   } catch (err) {

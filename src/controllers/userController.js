@@ -160,22 +160,38 @@ export const getSearchUser = async (req, res, next) => {
 
 //postman check 완
 export const registerGuestbook = async (req, res, next) => {
-  const {
-    body: { email, content },
-    params: { id },
-  } = req;
+  try {
+    const {
+      body: { email, content },
+      params: { id },
+    } = req;
 
-  const writer = await User.findOne({ email });
-  const receiver = await User.findById(id);
-  const guestbook = await Guestbook.create({
-    content,
-    writer: writer._id,
-    receiver: receiver._id,
-  });
-  receiver.guestbooks.push(guestbook._id);
-  await receiver.save();
+    const writer = await User.findOne({ email });
+    if (!writer) {
+      return res.status(404).json({ message: '작성자를 찾을 수 없습니다.' });
+    }
 
-  return res.status(200).json(receiver);
+    const receiver = await User.findById(id);
+    if (!receiver) {
+      return res.status(404).json({ message: '수신자를 찾을 수 없습니다.' });
+    }
+
+    const guestbook = await Guestbook.create({
+      content,
+      writer: writer._id,
+      receiver: receiver._id,
+    });
+    receiver.guestbooks.push(guestbook._id);
+    await receiver.save();
+
+    // 해당 사용자의 모든 guestbooks를 가져오기
+    const userWithGuestbooks = await User.findById(id).populate('guestbooks');
+
+    return res.status(200).json(userWithGuestbooks.guestbooks);
+  } catch (error) {
+    console.error('방명록을 등록하는 중 오류 발생:', error);
+    return res.status(500).json({ message: '서버 오류' });
+  }
 };
 
 // 수정 - 닉네임도 같이보내게
@@ -333,19 +349,20 @@ export const getRandomUser = async (req, res, next) => {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
 
-    const users = await client.get('users');
-    if (!users) {
+    const usersFromRedis = await client.get('users');
+    if (!usersFromRedis) {
       return res
         .status(404)
         .json({ message: '사용자 목록을 가져올 수 없습니다.' });
     }
 
-    const parsedUsers = JSON.parse(users);
+    const parsedUsers = JSON.parse(usersFromRedis);
 
     const excludedIds = [
-      id,
-      ...currentUser.friends.map((friend) => friend.toString()),
-    ]; // 친구들의 ID를 문자열로 변환
+      id.toString(),
+      ...currentUser.friends.map((friendId) => friendId.toString()),
+    ];
+
     const eligibleUserIds = parsedUsers.filter(
       (userId) => !excludedIds.includes(userId.toString())
     );
@@ -356,15 +373,18 @@ export const getRandomUser = async (req, res, next) => {
         .json({ message: 'Poly World의 모든 유저가 친구세요;' });
     }
 
-    // 랜덤 사용자 선택하기
     const randomIndex = Math.floor(Math.random() * eligibleUserIds.length);
-    const randomUserId = eligibleUserIds.splice(randomIndex, 1)[0]; // 선택된 사용자 ID를 목록에서 제거하고 반환
+    const randomUserId = eligibleUserIds[randomIndex];
 
     const randomUser = await User.findById(randomUserId);
 
     // 캐싱된 사용자 목록 업데이트
     client.set('users', JSON.stringify(eligibleUserIds));
-
+    console.log('사용자 친구목록 확인', currentUser.friends);
+    console.log('DB ID 형식확인', typeof randomUserId, typeof id);
+    console.log('DB ID 형식확인', randomUserId, id);
+    console.log('Redis 캐시 확인', parsedUsers);
+    console.log('필터링 로직 확인', eligibleUserIds);
     return res.status(200).json(randomUser);
   } catch (error) {
     console.error('랜덤 유저를 가져오는 중 오류 발생:', error);
