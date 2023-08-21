@@ -6,6 +6,26 @@ import nodemailer from "nodemailer";
 import Board from "../models/Board";
 import path from "path";
 import { URL } from "url";
+import { client } from "../db";
+
+const getFriendsInfo = async (fromUser) => {
+  let friendsInfoArray = [];
+  const fromUserFriends = fromUser.friends;
+  for (const fromUserFriend of fromUserFriends) {
+    const findUserFriend = await User.findOne({ nickname: fromUserFriend });
+    const findUserFriendIdAndNickname = Object.entries(
+      findUserFriend.toObject()
+    ).reduce((obj, [key, value]) => {
+      if (key === "_id" || key === "nickname" || key === "houseNum") {
+        obj[key] = value;
+      }
+      return obj;
+    }, {});
+    friendsInfoArray.push(findUserFriendIdAndNickname);
+  }
+  return friendsInfoArray;
+};
+
 //postman 체크 완
 export const verifyUserCode = async (req, res, next) => {
   const { email } = req.body;
@@ -85,7 +105,7 @@ export const postUserRegister = async (req, res, next) => {
       return res.status(400).send("코드 유효기간 만료.");
     }
 
-    await User.findOneAndUpdate(
+    const newUser = await User.findOneAndUpdate(
       { email },
       {
         nickname,
@@ -98,6 +118,7 @@ export const postUserRegister = async (req, res, next) => {
       },
       { new: true }
     );
+    await client.set("users", JSON.stringify(newUser));
 
     return res.status(200).json({ message: "success" });
   } catch (err) {
@@ -139,22 +160,38 @@ export const getSearchUser = async (req, res, next) => {
 
 //postman check 완
 export const registerGuestbook = async (req, res, next) => {
-  const {
-    body: { email, content },
-    params: { id },
-  } = req;
+  try {
+    const {
+      body: { email, content },
+      params: { id },
+    } = req;
 
-  const writer = await User.findOne({ email });
-  const receiver = await User.findById(id);
-  const guestbook = await Guestbook.create({
-    content,
-    writer: writer._id,
-    receiver: receiver._id,
-  });
-  receiver.guestbooks.push(guestbook._id);
-  await receiver.save();
+    const writer = await User.findOne({ email });
+    if (!writer) {
+      return res.status(404).json({ message: "작성자를 찾을 수 없습니다." });
+    }
 
-  return res.status(200).json(receiver);
+    const receiver = await User.findById(id);
+    if (!receiver) {
+      return res.status(404).json({ message: "수신자를 찾을 수 없습니다." });
+    }
+
+    const guestbook = await Guestbook.create({
+      content,
+      writer: writer._id,
+      receiver: receiver._id,
+    });
+    receiver.guestbooks.push(guestbook._id);
+    await receiver.save();
+
+    // 해당 사용자의 모든 guestbooks를 가져오기
+    const userWithGuestbooks = await User.findById(id).populate("guestbooks");
+
+    return res.status(200).json(userWithGuestbooks.guestbooks);
+  } catch (error) {
+    console.error("방명록을 등록하는 중 오류 발생:", error);
+    return res.status(500).json({ message: "서버 오류" });
+  }
 };
 
 // 수정 - 닉네임도 같이보내게
@@ -240,9 +277,11 @@ export const handleFriendReq = async (req, res, next) => {
     await fromUser.save();
     await toUser.save();
 
-    res.json({ message: `Friend request success` });
+    const friendsInfoArray = await getFriendsInfo(fromUser);
+
+    return res.status(200).json(friendsInfoArray);
   } catch (error) {
-    res.status(500).json({ message: "Something went wrong" });
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
 /*--------------------------------------------------------------- */
@@ -252,6 +291,8 @@ export const getUserContent = async (req, res, next) => {
 
   try {
     const user = await User.findById(id);
+    const userHouseNum = user.houseNum;
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -284,9 +325,69 @@ export const getUserContent = async (req, res, next) => {
       return extension === ".mp4";
     });
 
-    return res.status(200).json({ imageBoards, guestbooks, mp4Boards });
+    const friendsInfoArray = await getFriendsInfo(user);
+
+    return res.status(200).json({
+      imageBoards,
+      guestbooks,
+      mp4Boards,
+      userHouseNum,
+      friendsInfoArray,
+    });
   } catch (error) {
     console.error("Error while fetching user content:", error);
     return res.status(500).json({ message: "Server Error" });
+  }
+};
+//수정 나/친구 제외한 유저들 랜덤으로 보내주기
+export const getRandomUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const currentUser = await User.findById(id);
+    if (!currentUser) {
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+    }
+
+    const usersFromRedis = await client.get("users");
+    if (!usersFromRedis) {
+      return res
+        .status(404)
+        .json({ message: "사용자 목록을 가져올 수 없습니다." });
+    }
+
+    const parsedUsers = JSON.parse(usersFromRedis);
+
+    const excludedIds = [
+      id.toString(),
+      ...currentUser.friends.map((friendId) => friendId.toString()),
+    ];
+
+    const eligibleUserIds = parsedUsers.filter(
+      (userId) => !excludedIds.includes(userId.toString())
+    );
+
+    if (eligibleUserIds.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Poly World의 모든 유저가 친구세요;" });
+    }
+
+    const randomIndex = Math.floor(Math.random() * eligibleUserIds.length);
+    const randomUserId = eligibleUserIds[randomIndex];
+
+    const randomUser = await User.findById(randomUserId);
+
+    // 캐싱된 사용자 목록 업데이트
+    client.set("users", JSON.stringify(eligibleUserIds));
+    console.log("사용자 친구목록 확인", currentUser.friends);
+    console.log("DB ID 형식확인", typeof randomUserId, typeof id);
+    console.log("DB ID 형식확인", randomUserId, id);
+    console.log("Redis 캐시 확인", parsedUsers);
+    console.log("필터링 로직 확인", eligibleUserIds);
+    return res.status(200).json(randomUser);
+  } catch (error) {
+    console.error("랜덤 유저를 가져오는 중 오류 발생:", error);
+    return res.status(500).json({ message: "서버 오류" });
   }
 };

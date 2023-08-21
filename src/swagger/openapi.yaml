@@ -6,7 +6,7 @@ info:
   license:
     name: Sangju
 servers:
-  - url: 3.35.5.145:8080 #자신의 포트번호
+  - url: 3.34.180.83:8080 #자신의 포트번호
 components:
   schemas:
     board:
@@ -136,3 +136,5 @@ paths:
     $ref: "./user.yaml#/~1user~1handleFriendRequest"
   /user/search:
     $ref: "./user.yaml#/~1user~1search"
+  # /user/surfing:
+  #   $ref: './user.yaml#/~1user~1surfing'

@@ -18,7 +18,7 @@
             schema:
               type: array
               items:
-                $ref: "./openapi.yaml#/components/schemas/board"
+                $ref: './openapi.yaml#/components/schemas/board'
       404:
         description: User not found
       500:
@@ -42,7 +42,7 @@
         content:
           application/json:
             schema:
-              $ref: "./openapi.yaml#/components/schemas/board"
+              $ref: './openapi.yaml#/components/schemas/board'
       404:
         description: Board not found
       500:
