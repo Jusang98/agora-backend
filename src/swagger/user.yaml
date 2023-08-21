@@ -117,29 +117,28 @@
         description: Search was successful
       "400":
         description: Search was not successful
-
-/user/surfing:
-  get:
-  tags:
-      - User
-    summary: 랜덤 유저 GET
-    description: This API endpoint returns a random user from the users list.
-    responses:
-      200:
-        description: Successfully retrieved a random user
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  type: integer
-                  format: int64
-                username:
-                  type: string
-                email:
-                  type: string
-                etc:
-                  type: string
-      default:
-        description: Unexpected error
+# /user/surfing:
+#   get:
+#   tags:
+#       - User
+#     summary: 랜덤 유저 GET
+#     description: This API endpoint returns a random user from the users list.
+#     responses:
+#       200:
+#         description: Successfully retrieved a random user
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 id:
+#                   type: integer
+#                   format: int64
+#                 username:
+#                   type: string
+#                 email:
+#                   type: string
+#                 etc:
+#                   type: string
+#       default:
+#         description: Unexpected error
